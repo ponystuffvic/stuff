@@ -6,6 +6,63 @@
     <title>For Sale - Everything Must Go!</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase Libraries -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, query, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // IMPORTANT: Global variables are required for the immersive environment.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Set log level for debugging
+        setLogLevel('debug');
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        let userId = null;
+        let isAuthReady = false;
+
+        // Handle authentication with custom token or anonymously
+        if (initialAuthToken) {
+            signInWithCustomToken(auth, initialAuthToken)
+                .then(() => {
+                    console.log("Signed in with custom token.");
+                })
+                .catch((error) => {
+                    console.error("Custom token sign-in failed:", error);
+                    signInAnonymously(auth);
+                });
+        } else {
+            signInAnonymously(auth).catch((error) => {
+                console.error("Anonymous sign-in failed:", error);
+            });
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userId = user.uid;
+                isAuthReady = true;
+                console.log("User signed in:", userId);
+                initializeAppLogic();
+            } else {
+                console.log("User is signed out.");
+                isAuthReady = false;
+            }
+        });
+
+        // Global functions and variables available in the script
+        window.app = app;
+        window.db = db;
+        window.auth = auth;
+        window.getUserId = () => userId;
+        window.isAuthReady = () => isAuthReady;
+    </script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -81,8 +138,28 @@
             </p>
         </div>
 
+        <!-- Items Grid -->
+        <div id="items-container" class="space-y-12">
+            <!-- Items will be dynamically generated here by JavaScript -->
+        </div>
+        
+        <!-- Contact Section -->
+        <section id="contact" class="mt-16 bg-gray-100 p-8 rounded-xl shadow-inner text-center">
+            <h2 class="text-3xl font-extrabold text-gray-900 mb-4">How to Inquire or Purchase</h2>
+            <p class="text-lg text-gray-600 mb-4">
+                If you're interested in an item, please contact us via email.
+            </p>
+            <!-- Important: Replace the email address with your own -->
+            <a href="mailto:your-email@example.com" class="text-blue-600 hover:text-blue-800 text-xl font-bold transition-colors duration-300">
+                your-email@example.com
+            </a>
+            <p class="text-sm text-gray-500 mt-2">
+                (Click to open your email client)
+            </p>
+        </section>
+
         <!-- Admin Panel (Hidden by default) -->
-        <section id="admin-panel" class="hidden bg-gray-100 p-8 rounded-xl shadow-inner mb-10">
+        <section id="admin-panel" class="hidden bg-gray-100 p-8 rounded-xl shadow-inner my-10">
             <h2 class="text-3xl font-extrabold text-gray-900 mb-6 text-center">Admin Panel</h2>
             <form id="item-form" class="max-w-xl mx-auto space-y-4">
                 <input type="hidden" id="item-id">
@@ -125,27 +202,6 @@
                 </button>
             </form>
         </section>
-
-        <!-- Items Grid -->
-        <div id="items-container" class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            <!-- Items will be dynamically generated here by JavaScript -->
-        </div>
-
-        <!-- Contact Section -->
-        <section id="contact" class="mt-16 bg-gray-100 p-8 rounded-xl shadow-inner text-center">
-            <h2 class="text-3xl font-extrabold text-gray-900 mb-4">How to Inquire or Purchase</h2>
-            <p class="text-lg text-gray-600 mb-4">
-                If you're interested in an item, please contact us via email.
-            </p>
-            <!-- Important: Replace the email address with your own -->
-            <a href="mailto:your-email@example.com" class="text-blue-600 hover:text-blue-800 text-xl font-bold transition-colors duration-300">
-                your-email@example.com
-            </a>
-            <p class="text-sm text-gray-500 mt-2">
-                (Click to open your email client)
-            </p>
-        </section>
-
     </main>
 
     <!-- Footer -->
@@ -155,8 +211,9 @@
         </div>
     </footer>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
+    <script type="module">
+        // Wait for Firebase to be ready before initializing the app logic
+        const initializeAppLogic = () => {
             const adminPanelBtn = document.getElementById('admin-panel-btn');
             const adminPanel = document.getElementById('admin-panel');
             const passwordContainer = document.getElementById('password-container');
@@ -193,7 +250,7 @@
                         behavior: 'smooth'
                     });
                 } else {
-                    alert('Incorrect password. Please try again.');
+                    window.alert('Incorrect password. Please try again.');
                     adminPasswordInput.value = '';
                 }
             });
@@ -204,110 +261,113 @@
                     passwordContainer.classList.add('hidden');
                 }
             });
-
-            // Function to load items from local storage
-            const loadItems = () => {
-                try {
-                    const items = JSON.parse(localStorage.getItem('forSaleItems')) || [];
-                    return items;
-                } catch (e) {
-                    console.error("Error parsing items from localStorage", e);
-                    return [];
-                }
-            };
-
-            // Function to save items to local storage
-            const saveItems = (items) => {
-                localStorage.setItem('forSaleItems', JSON.stringify(items));
-            };
-
+            
+            // Define the categories and their headings
+            const categories = [
+                "bridles", "saddles", "saddle pads", "bits", "parts and pieces",
+                "saddle racks", "spurs", "halters and lead ropes", "other"
+            ];
+            
             // Function to render items on the page based on the selected category
-            const renderItems = () => {
+            const renderItems = (items) => {
                 itemsContainer.innerHTML = ''; // Clear existing items
-                const allItems = loadItems();
-                const selectedCategory = sortSelect.value;
-                
-                let filteredItems = allItems;
-                if (selectedCategory !== 'all') {
-                    filteredItems = allItems.filter(item => item.category === selectedCategory);
-                }
 
-                if (filteredItems.length === 0) {
-                    itemsContainer.innerHTML = `
-                        <div class="col-span-full text-center text-gray-500 mt-10">
-                            <p>No items listed yet in this category. Use the Admin Panel to add your first item!</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                let itemIndex = 1;
-                filteredItems.forEach(item => {
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'bg-white rounded-xl shadow-lg overflow-hidden transition-transform transform hover:scale-105 relative';
-                    
-                    // Create the image gallery container
-                    const imageGallery = document.createElement('div');
-                    imageGallery.className = 'flex overflow-x-auto snap-x snap-mandatory hide-scrollbar';
-                    if (item.images && item.images.length > 0) {
-                        item.images.forEach(imageSrc => {
-                            const img = document.createElement('img');
-                            img.src = imageSrc;
-                            img.alt = `Image of ${item.name}`;
-                            img.className = 'w-full h-48 object-cover flex-shrink-0 snap-center';
-                            imageGallery.appendChild(img);
-                        });
-                    } else {
-                        const img = document.createElement('img');
-                        img.src = 'https://placehold.co/600x400/818181/FFFFFF?text=No+Photo';
-                        img.alt = 'No photo available';
-                        img.className = 'w-full h-48 object-cover';
-                        imageGallery.appendChild(img);
+                const groupedItems = items.reduce((acc, item) => {
+                    const category = item.category || 'other'; // Default to 'other' if no category
+                    if (!acc[category]) {
+                        acc[category] = [];
                     }
+                    acc[category].push(item);
+                    return acc;
+                }, {});
 
-                    itemDiv.appendChild(imageGallery);
+                // Render each category section
+                categories.forEach(category => {
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.id = category;
+                    categoryDiv.className = 'mt-8 pt-4';
 
-                    // Add the rest of the item content
-                    const contentDiv = document.createElement('div');
-                    contentDiv.className = 'p-6';
-                    contentDiv.innerHTML = `
-                        <h3 class="text-xl font-bold mb-2">${itemIndex}. ${item.name}</h3>
-                        <p class="text-gray-600 mb-4">${item.description}</p>
-                        <div class="flex items-center justify-between">
-                            <span class="text-2xl font-bold text-blue-600">$${item.price}</span>
-                            <div class="space-x-2">
-                                <button class="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300 edit-btn" data-id="${item.id}">
-                                    Edit
-                                </button>
-                                <a href="#contact" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300">
-                                    Inquire
-                                </a>
-                            </div>
-                        </div>
-                    `;
-                    itemDiv.appendChild(contentDiv);
+                    const categoryTitle = document.createElement('h3');
+                    categoryTitle.className = 'text-2xl font-bold mb-4 capitalize';
+                    categoryTitle.textContent = category;
+                    categoryDiv.appendChild(categoryTitle);
 
-                    // Add the delete button
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 text-xs opacity-80 hover:opacity-100 transition-opacity delete-btn';
-                    deleteBtn.setAttribute('data-id', item.id);
-                    deleteBtn.setAttribute('title', 'Delete Item');
-                    deleteBtn.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clip-rule="evenodd" />
-                        </svg>
-                    `;
-                    itemDiv.appendChild(deleteBtn);
+                    const gridContainer = document.createElement('div');
+                    gridContainer.className = 'grid gap-8 sm:grid-cols-2 lg:grid-cols-3';
+                    
+                    const itemsInCategory = groupedItems[category] || [];
+                    if (itemsInCategory.length === 0) {
+                        gridContainer.innerHTML = `<p class="text-gray-500">No items listed in this category yet.</p>`;
+                    } else {
+                        itemsInCategory.forEach((item, index) => {
+                            const itemDiv = document.createElement('div');
+                            itemDiv.className = 'bg-white rounded-xl shadow-lg overflow-hidden transition-transform transform hover:scale-105 relative';
+                            
+                            // Create the image gallery container
+                            const imageGallery = document.createElement('div');
+                            imageGallery.className = 'flex overflow-x-auto snap-x snap-mandatory hide-scrollbar';
+                            if (item.images && item.images.length > 0) {
+                                item.images.forEach(imageSrc => {
+                                    const img = document.createElement('img');
+                                    img.src = imageSrc;
+                                    img.alt = `Image of ${item.name}`;
+                                    img.className = 'w-full h-48 object-cover flex-shrink-0 snap-center';
+                                    imageGallery.appendChild(img);
+                                });
+                            } else {
+                                const img = document.createElement('img');
+                                img.src = 'https://placehold.co/600x400/818181/FFFFFF?text=No+Photo';
+                                img.alt = 'No photo available';
+                                img.className = 'w-full h-48 object-cover';
+                                imageGallery.appendChild(img);
+                            }
 
-                    itemsContainer.appendChild(itemDiv);
-                    itemIndex++;
+                            itemDiv.appendChild(imageGallery);
+
+                            // Add the rest of the item content
+                            const contentDiv = document.createElement('div');
+                            contentDiv.className = 'p-6';
+                            contentDiv.innerHTML = `
+                                <h3 class="text-xl font-bold mb-2">${index + 1}. ${item.name}</h3>
+                                <p class="text-gray-600 mb-4">${item.description}</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-2xl font-bold text-blue-600">$${item.price}</span>
+                                    <div class="space-x-2">
+                                        <button class="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300 edit-btn" data-id="${item.id}">
+                                            Edit
+                                        </button>
+                                        <a href="#contact" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300">
+                                            Inquire
+                                        </a>
+                                    </div>
+                                </div>
+                            `;
+                            itemDiv.appendChild(contentDiv);
+
+                            // Add the delete button
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.className = 'absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 text-xs opacity-80 hover:opacity-100 transition-opacity delete-btn';
+                            deleteBtn.setAttribute('data-id', item.id);
+                            deleteBtn.setAttribute('title', 'Delete Item');
+                            deleteBtn.innerHTML = `
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clip-rule="evenodd" />
+                                </svg>
+                            `;
+                            itemDiv.appendChild(deleteBtn);
+
+                            gridContainer.appendChild(itemDiv);
+                        });
+                    }
+                    
+                    categoryDiv.appendChild(gridContainer);
+                    itemsContainer.appendChild(categoryDiv);
                 });
-
+                
                 // Attach event listeners to delete and edit buttons
                 document.querySelectorAll('.delete-btn').forEach(button => {
                     button.addEventListener('click', (e) => {
                         const itemId = e.currentTarget.getAttribute('data-id');
-                        // Use a custom confirmation message instead of alert/confirm
                         if (window.confirm("Are you sure you want to delete this item?")) {
                             deleteItem(itemId);
                         }
@@ -324,8 +384,8 @@
             
             // Function to find an item by its ID and populate the form
             const editItem = (itemId) => {
-                const items = loadItems();
-                const itemToEdit = items.find(item => item.id === itemId);
+                // Find item from the current items
+                const itemToEdit = window.currentItems.find(item => item.id === itemId);
                 if (itemToEdit) {
                     itemIdInput.value = itemToEdit.id;
                     itemNameInput.value = itemToEdit.name;
@@ -342,16 +402,28 @@
             };
 
             // Function to delete an item
-            const deleteItem = (itemId) => {
-                let items = loadItems();
-                items = items.filter(item => item.id !== itemId);
-                saveItems(items);
-                renderItems();
+            const deleteItem = async (itemId) => {
+                if (window.isAuthReady()) {
+                    const itemDocRef = doc(window.db, `artifacts/${window.appId}/users/${window.getUserId()}/items`, itemId);
+                    try {
+                        await deleteDoc(itemDocRef);
+                        console.log("Document successfully deleted!");
+                    } catch (e) {
+                        console.error("Error removing document: ", e);
+                    }
+                } else {
+                    console.error("Authentication not ready. Cannot delete item.");
+                }
             };
 
             // Handle form submission
-            itemForm.addEventListener('submit', (e) => {
+            itemForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                if (!window.isAuthReady()) {
+                    console.error("Authentication not ready. Cannot save item.");
+                    return;
+                }
+
                 const id = itemIdInput.value;
                 const name = itemNameInput.value;
                 const description = itemDescriptionInput.value;
@@ -359,35 +431,63 @@
                 const images = itemImageInput.value.split(',').map(url => url.trim()).filter(url => url.length > 0);
                 const category = itemCategoryInput.value;
                 
-                let items = loadItems();
-
                 if (id) {
                     // Editing an existing item
-                    items = items.map(item => item.id === id ? { id, name, description, price, images, category } : item);
+                    const itemDocRef = doc(window.db, `artifacts/${window.appId}/users/${window.getUserId()}/items`, id);
+                    try {
+                        await updateDoc(itemDocRef, { name, description, price, images, category });
+                        console.log("Document successfully updated!");
+                    } catch (e) {
+                        console.error("Error updating document: ", e);
+                    }
                 } else {
                     // Adding a new item
-                    const newItem = {
-                        id: Date.now().toString(),
-                        name,
-                        description,
-                        price,
-                        images,
-                        category
-                    };
-                    items.push(newItem);
+                    try {
+                        await addDoc(collection(window.db, `artifacts/${window.appId}/users/${window.getUserId()}/items`), { name, description, price, images, category });
+                        console.log("Document successfully written!");
+                    } catch (e) {
+                        console.error("Error adding document: ", e);
+                    }
                 }
 
-                saveItems(items);
                 itemForm.reset();
-                renderItems();
             });
 
             // Listen for changes on the sort dropdown
-            sortSelect.addEventListener('change', renderItems);
+            sortSelect.addEventListener('change', (e) => {
+                const targetId = e.target.value;
+                if (targetId === 'all') {
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                } else {
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 100, // Offset for header
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            });
 
-            // Initial render of items when the page loads
-            renderItems();
-        });
+            // Set up real-time listener for Firestore data
+            const itemsCollectionRef = collection(window.db, `artifacts/${window.appId}/users/${window.getUserId()}/items`);
+            onSnapshot(itemsCollectionRef, (querySnapshot) => {
+                const items = [];
+                querySnapshot.forEach((doc) => {
+                    items.push({ id: doc.id, ...doc.data() });
+                });
+                window.currentItems = items; // Store items globally for editing
+                renderItems(items);
+            }, (error) => {
+                console.error("Error listening to items collection:", error);
+            });
+        };
+        
+        // Expose initializeAppLogic globally so it can be called by the parent script
+        window.initializeAppLogic = initializeAppLogic;
     </script>
 </body>
 </html>
