@@ -241,6 +241,7 @@
                     return;
                 }
 
+                let itemIndex = 1;
                 filteredItems.forEach(item => {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'bg-white rounded-xl shadow-lg overflow-hidden transition-transform transform hover:scale-105 relative';
@@ -270,7 +271,7 @@
                     const contentDiv = document.createElement('div');
                     contentDiv.className = 'p-6';
                     contentDiv.innerHTML = `
-                        <h3 class="text-xl font-bold mb-2">${item.name}</h3>
+                        <h3 class="text-xl font-bold mb-2">${itemIndex}. ${item.name}</h3>
                         <p class="text-gray-600 mb-4">${item.description}</p>
                         <div class="flex items-center justify-between">
                             <span class="text-2xl font-bold text-blue-600">$${item.price}</span>
@@ -299,6 +300,7 @@
                     itemDiv.appendChild(deleteBtn);
 
                     itemsContainer.appendChild(itemDiv);
+                    itemIndex++;
                 });
 
                 // Attach event listeners to delete and edit buttons
