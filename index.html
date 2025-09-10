@@ -11,6 +11,21 @@
             font-family: 'Inter', sans-serif;
             background-color: #f7fafc;
         }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
     </style>
 </head>
 <body class="antialiased text-gray-800">
@@ -19,10 +34,13 @@
     <header class="bg-gray-900 text-white p-6 shadow-md rounded-b-lg">
         <div class="container mx-auto flex flex-col sm:flex-row justify-between items-center">
             <h1 class="text-3xl font-bold mb-2 sm:mb-0">For Sale</h1>
-            <nav>
+            <nav class="flex space-x-4">
                 <a href="#contact" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
                     Contact Us
                 </a>
+                <button id="admin-panel-btn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
+                    Manage Items
+                </button>
             </nav>
         </div>
     </header>
@@ -37,56 +55,39 @@
             </p>
         </div>
 
+        <!-- Admin Panel (Hidden by default) -->
+        <section id="admin-panel" class="hidden bg-gray-100 p-8 rounded-xl shadow-inner mb-10">
+            <h2 class="text-3xl font-extrabold text-gray-900 mb-6 text-center">Admin Panel</h2>
+            <form id="item-form" class="max-w-xl mx-auto space-y-4">
+                <input type="hidden" id="item-id">
+                <div>
+                    <label for="item-name" class="block text-sm font-medium text-gray-700">Item Name</label>
+                    <input type="text" id="item-name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2">
+                </div>
+                <div>
+                    <label for="item-description" class="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea id="item-description" rows="3" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"></textarea>
+                </div>
+                <div>
+                    <label for="item-price" class="block text-sm font-medium text-gray-700">Price ($)</label>
+                    <input type="number" id="item-price" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2">
+                </div>
+                <div>
+                    <label for="item-image" class="block text-sm font-medium text-gray-700">Image URL</label>
+                    <input type="url" id="item-image" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2">
+                    <p class="mt-1 text-sm text-gray-500">
+                        Upload your image to a public host (like GitHub) and paste the URL here.
+                    </p>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
+                    Save Item
+                </button>
+            </form>
+        </section>
+
         <!-- Items Grid -->
-        <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-
-            <!-- Item 1 -->
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden transition-transform transform hover:scale-105">
-                <!-- Use a placeholder image for now. Replace with your own high-quality photos. -->
-                <img src="https://placehold.co/600x400/818181/FFFFFF?text=Item+Photo+1" alt="Placeholder image of a for-sale item" class="w-full h-48 object-cover">
-                <div class="p-6">
-                    <h3 class="text-xl font-bold mb-2">Vintage Wooden Desk</h3>
-                    <p class="text-gray-600 mb-4">A beautiful, well-maintained vintage desk with a large workspace and a single drawer. Perfect for a home office or study.</p>
-                    <div class="flex items-center justify-between">
-                        <span class="text-2xl font-bold text-blue-600">$150</span>
-                        <a href="#contact" class="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300">
-                            Inquire
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Item 2 -->
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden transition-transform transform hover:scale-105">
-                <img src="https://placehold.co/600x400/818181/FFFFFF?text=Item+Photo+2" alt="Placeholder image of a for-sale item" class="w-full h-48 object-cover">
-                <div class="p-6">
-                    <h3 class="text-xl font-bold mb-2">Ceramic Pot Set</h3>
-                    <p class="text-gray-600 mb-4">A set of three handmade ceramic pots in varying sizes. Ideal for houseplants or as decorative pieces.</p>
-                    <div class="flex items-center justify-between">
-                        <span class="text-2xl font-bold text-blue-600">$40</span>
-                        <a href="#contact" class="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300">
-                            Inquire
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Item 3 -->
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden transition-transform transform hover:scale-105">
-                <img src="https://placehold.co/600x400/818181/FFFFFF?text=Item+Photo+3" alt="Placeholder image of a for-sale item" class="w-full h-48 object-cover">
-                <div class="p-6">
-                    <h3 class="text-xl font-bold mb-2">Electric Guitar (Used)</h3>
-                    <p class="text-gray-600 mb-4">A pre-owned electric guitar in excellent condition. Includes a soft case and a small practice amp.</p>
-                    <div class="flex items-center justify-between">
-                        <span class="text-2xl font-bold text-blue-600">$250</span>
-                        <a href="#contact" class="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300">
-                            Inquire
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Add more items by copying and pasting the "Item" div here -->
+        <div id="items-container" class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <!-- Items will be dynamically generated here by JavaScript -->
         </div>
 
         <!-- Contact Section -->
@@ -113,5 +114,125 @@
         </div>
     </footer>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const adminPanelBtn = document.getElementById('admin-panel-btn');
+            const adminPanel = document.getElementById('admin-panel');
+            const itemsContainer = document.getElementById('items-container');
+            const itemForm = document.getElementById('item-form');
+            
+            // Function to toggle the visibility of the admin panel
+            adminPanelBtn.addEventListener('click', () => {
+                adminPanel.classList.toggle('hidden');
+                if (!adminPanel.classList.contains('hidden')) {
+                    window.scrollTo({
+                        top: adminPanel.offsetTop - 20,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+
+            // Function to load items from local storage
+            const loadItems = () => {
+                try {
+                    const items = JSON.parse(localStorage.getItem('forSaleItems')) || [];
+                    return items;
+                } catch (e) {
+                    console.error("Error parsing items from localStorage", e);
+                    return [];
+                }
+            };
+
+            // Function to save items to local storage
+            const saveItems = (items) => {
+                localStorage.setItem('forSaleItems', JSON.stringify(items));
+            };
+
+            // Function to render items on the page
+            const renderItems = () => {
+                itemsContainer.innerHTML = ''; // Clear existing items
+                const items = loadItems();
+
+                if (items.length === 0) {
+                    itemsContainer.innerHTML = `
+                        <div class="col-span-full text-center text-gray-500 mt-10">
+                            <p>No items listed yet. Use the Admin Panel to add your first item!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                items.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'bg-white rounded-xl shadow-lg overflow-hidden transition-transform transform hover:scale-105 relative';
+                    itemDiv.innerHTML = `
+                        <img src="${item.image || 'https://placehold.co/600x400/818181/FFFFFF?text=No+Photo'}" alt="${item.name}" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold mb-2">${item.name}</h3>
+                            <p class="text-gray-600 mb-4">${item.description}</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-2xl font-bold text-blue-600">$${item.price}</span>
+                                <a href="#contact" class="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300">
+                                    Inquire
+                                </a>
+                            </div>
+                        </div>
+                        <button class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 text-xs opacity-80 hover:opacity-100 transition-opacity delete-btn" data-id="${item.id}" title="Delete Item">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    `;
+                    itemsContainer.appendChild(itemDiv);
+                });
+
+                // Attach event listeners to delete buttons
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const itemId = e.currentTarget.getAttribute('data-id');
+                        deleteItem(itemId);
+                    });
+                });
+            };
+
+            // Function to delete an item
+            const deleteItem = (itemId) => {
+                let items = loadItems();
+                items = items.filter(item => item.id !== itemId);
+                saveItems(items);
+                renderItems();
+            };
+
+            // Handle form submission
+            itemForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('item-name').value;
+                const description = document.getElementById('item-description').value;
+                const price = document.getElementById('item-price').value;
+                const image = document.getElementById('item-image').value;
+
+                // Create a unique ID for the item
+                const id = Date.now().toString();
+
+                const newItem = {
+                    id,
+                    name,
+                    description,
+                    price,
+                    image
+                };
+
+                const items = loadItems();
+                items.push(newItem);
+                saveItems(items);
+                
+                itemForm.reset();
+                renderItems();
+            });
+
+            // Initial render of items when the page loads
+            renderItems();
+        });
+    </script>
 </body>
 </html>
