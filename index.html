@@ -80,10 +80,10 @@
                     <input type="number" id="item-price" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2">
                 </div>
                 <div>
-                    <label for="item-image" class="block text-sm font-medium text-gray-700">Image URL</label>
-                    <input type="url" id="item-image" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2">
+                    <label for="item-image" class="block text-sm font-medium text-gray-700">Image URLs</label>
+                    <textarea id="item-image" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2" placeholder="Paste image URLs here, separated by commas."></textarea>
                     <p class="mt-1 text-sm text-gray-500">
-                        Upload your image to a public host (like Imgur) and paste the URL here.
+                        Upload your images to a public host (like Imgur or Google Drive) and paste the URLs here, separated by commas.
                     </p>
                 </div>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
@@ -139,7 +139,7 @@
             // Set a simple password.
             // WARNING: This is NOT secure. The password is visible in the page source.
             // For a real-world application, you would use a secure authentication system.
-            const ADMIN_PASSWORD = "passwordword332211!";
+            const ADMIN_PASSWORD = "passwordword332211";
 
             // Function to handle the password check
             adminPanelBtn.addEventListener('click', (e) => {
@@ -202,29 +202,60 @@
                 items.forEach(item => {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'bg-white rounded-xl shadow-lg overflow-hidden transition-transform transform hover:scale-105 relative';
-                    itemDiv.innerHTML = `
-                        <img src="${item.image || 'https://placehold.co/600x400/818181/FFFFFF?text=No+Photo'}" alt="${item.name}" class="w-full h-48 object-cover">
-                        <div class="p-6">
-                            <h3 class="text-xl font-bold mb-2">${item.name}</h3>
-                            <p class="text-gray-600 mb-4">${item.description}</p>
-                            <div class="flex items-center justify-between">
-                                <span class="text-2xl font-bold text-blue-600">$${item.price}</span>
-                                <div class="space-x-2">
-                                    <button class="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300 edit-btn" data-id="${item.id}">
-                                        Edit
-                                    </button>
-                                    <a href="#contact" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300">
-                                        Inquire
-                                    </a>
-                                </div>
+                    
+                    // Create the image gallery container
+                    const imageGallery = document.createElement('div');
+                    imageGallery.className = 'flex overflow-x-auto snap-x snap-mandatory hide-scrollbar';
+                    if (item.images && item.images.length > 0) {
+                        item.images.forEach(imageSrc => {
+                            const img = document.createElement('img');
+                            img.src = imageSrc;
+                            img.alt = `Image of ${item.name}`;
+                            img.className = 'w-full h-48 object-cover flex-shrink-0 snap-center';
+                            imageGallery.appendChild(img);
+                        });
+                    } else {
+                        const img = document.createElement('img');
+                        img.src = 'https://placehold.co/600x400/818181/FFFFFF?text=No+Photo';
+                        img.alt = 'No photo available';
+                        img.className = 'w-full h-48 object-cover';
+                        imageGallery.appendChild(img);
+                    }
+
+                    itemDiv.appendChild(imageGallery);
+
+                    // Add the rest of the item content
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'p-6';
+                    contentDiv.innerHTML = `
+                        <h3 class="text-xl font-bold mb-2">${item.name}</h3>
+                        <p class="text-gray-600 mb-4">${item.description}</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl font-bold text-blue-600">$${item.price}</span>
+                            <div class="space-x-2">
+                                <button class="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300 edit-btn" data-id="${item.id}">
+                                    Edit
+                                </button>
+                                <a href="#contact" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300">
+                                    Inquire
+                                </a>
                             </div>
                         </div>
-                        <button class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 text-xs opacity-80 hover:opacity-100 transition-opacity delete-btn" data-id="${item.id}" title="Delete Item">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
                     `;
+                    itemDiv.appendChild(contentDiv);
+
+                    // Add the delete button
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 text-xs opacity-80 hover:opacity-100 transition-opacity delete-btn';
+                    deleteBtn.setAttribute('data-id', item.id);
+                    deleteBtn.setAttribute('title', 'Delete Item');
+                    deleteBtn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clip-rule="evenodd" />
+                        </svg>
+                    `;
+                    itemDiv.appendChild(deleteBtn);
+
                     itemsContainer.appendChild(itemDiv);
                 });
 
@@ -256,7 +287,7 @@
                     itemNameInput.value = itemToEdit.name;
                     itemDescriptionInput.value = itemToEdit.description;
                     itemPriceInput.value = itemToEdit.price;
-                    itemImageInput.value = itemToEdit.image || '';
+                    itemImageInput.value = itemToEdit.images ? itemToEdit.images.join(', ') : '';
                     adminPanel.classList.remove('hidden');
                     window.scrollTo({
                         top: adminPanel.offsetTop - 20,
@@ -280,13 +311,13 @@
                 const name = itemNameInput.value;
                 const description = itemDescriptionInput.value;
                 const price = itemPriceInput.value;
-                const image = itemImageInput.value;
+                const images = itemImageInput.value.split(',').map(url => url.trim()).filter(url => url.length > 0);
                 
                 let items = loadItems();
 
                 if (id) {
                     // Editing an existing item
-                    items = items.map(item => item.id === id ? { id, name, description, price, image } : item);
+                    items = items.map(item => item.id === id ? { id, name, description, price, images } : item);
                 } else {
                     // Adding a new item
                     const newItem = {
@@ -294,7 +325,7 @@
                         name,
                         description,
                         price,
-                        image
+                        images
                     };
                     items.push(newItem);
                 }
