@@ -34,13 +34,20 @@
     <header class="bg-gray-900 text-white p-6 shadow-md rounded-b-lg">
         <div class="container mx-auto flex flex-col sm:flex-row justify-between items-center">
             <h1 class="text-3xl font-bold mb-2 sm:mb-0">For Sale</h1>
-            <nav class="flex space-x-4">
+            <nav class="flex space-x-4 items-center">
                 <a href="#contact" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
                     Contact Us
                 </a>
-                <button id="admin-panel-btn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
-                    Manage Items
-                </button>
+                <div class="relative">
+                    <button id="admin-panel-btn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
+                        Manage Items
+                    </button>
+                    <!-- A simple password prompt -->
+                    <div id="password-container" class="absolute right-0 mt-2 p-2 bg-white rounded-lg shadow-xl hidden z-10">
+                        <input type="password" id="admin-password" placeholder="Enter password" class="w-full p-2 border rounded text-gray-900">
+                        <button id="password-go-btn" class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white p-2 rounded">Go</button>
+                    </div>
+                </div>
             </nav>
         </div>
     </header>
@@ -76,7 +83,7 @@
                     <label for="item-image" class="block text-sm font-medium text-gray-700">Image URL</label>
                     <input type="url" id="item-image" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2">
                     <p class="mt-1 text-sm text-gray-500">
-                        Upload your image to a public host (like GitHub) and paste the URL here.
+                        Upload your image to a public host (like Imgur) and paste the URL here.
                     </p>
                 </div>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
@@ -97,8 +104,8 @@
                 If you're interested in an item, please contact us via email.
             </p>
             <!-- Important: Replace the email address with your own -->
-            <a href="mailto:ponystuffvic@gmail.com" class="text-blue-600 hover:text-blue-800 text-xl font-bold transition-colors duration-300">
-                ponystuffvic@gmail.com
+            <a href="mailto:your-email@example.com" class="text-blue-600 hover:text-blue-800 text-xl font-bold transition-colors duration-300">
+                your-email@example.com
             </a>
             <p class="text-sm text-gray-500 mt-2">
                 (Click to open your email client)
@@ -118,17 +125,47 @@
         document.addEventListener('DOMContentLoaded', () => {
             const adminPanelBtn = document.getElementById('admin-panel-btn');
             const adminPanel = document.getElementById('admin-panel');
+            const passwordContainer = document.getElementById('password-container');
+            const adminPasswordInput = document.getElementById('admin-password');
+            const passwordGoBtn = document.getElementById('password-go-btn');
             const itemsContainer = document.getElementById('items-container');
             const itemForm = document.getElementById('item-form');
-            
-            // Function to toggle the visibility of the admin panel
-            adminPanelBtn.addEventListener('click', () => {
-                adminPanel.classList.toggle('hidden');
-                if (!adminPanel.classList.contains('hidden')) {
+            const itemIdInput = document.getElementById('item-id');
+            const itemNameInput = document.getElementById('item-name');
+            const itemDescriptionInput = document.getElementById('item-description');
+            const itemPriceInput = document.getElementById('item-price');
+            const itemImageInput = document.getElementById('item-image');
+
+            // Set a simple password.
+            // WARNING: This is NOT secure. The password is visible in the page source.
+            // For a real-world application, you would use a secure authentication system.
+            const ADMIN_PASSWORD = "passwordword332211!";
+
+            // Function to handle the password check
+            adminPanelBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent the body click from closing it immediately
+                passwordContainer.classList.toggle('hidden');
+                adminPasswordInput.focus();
+            });
+
+            passwordGoBtn.addEventListener('click', () => {
+                if (adminPasswordInput.value === ADMIN_PASSWORD) {
+                    adminPanel.classList.remove('hidden');
+                    passwordContainer.classList.add('hidden');
                     window.scrollTo({
                         top: adminPanel.offsetTop - 20,
                         behavior: 'smooth'
                     });
+                } else {
+                    alert('Incorrect password. Please try again.');
+                    adminPasswordInput.value = '';
+                }
+            });
+
+            // Close the password container if the user clicks anywhere else
+            document.body.addEventListener('click', (e) => {
+                if (!adminPanelBtn.contains(e.target) && !passwordContainer.contains(e.target)) {
+                    passwordContainer.classList.add('hidden');
                 }
             });
 
@@ -172,9 +209,14 @@
                             <p class="text-gray-600 mb-4">${item.description}</p>
                             <div class="flex items-center justify-between">
                                 <span class="text-2xl font-bold text-blue-600">$${item.price}</span>
-                                <a href="#contact" class="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300">
-                                    Inquire
-                                </a>
+                                <div class="space-x-2">
+                                    <button class="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300 edit-btn" data-id="${item.id}">
+                                        Edit
+                                    </button>
+                                    <a href="#contact" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300">
+                                        Inquire
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <button class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 text-xs opacity-80 hover:opacity-100 transition-opacity delete-btn" data-id="${item.id}" title="Delete Item">
@@ -186,13 +228,41 @@
                     itemsContainer.appendChild(itemDiv);
                 });
 
-                // Attach event listeners to delete buttons
+                // Attach event listeners to delete and edit buttons
                 document.querySelectorAll('.delete-btn').forEach(button => {
                     button.addEventListener('click', (e) => {
                         const itemId = e.currentTarget.getAttribute('data-id');
-                        deleteItem(itemId);
+                        // Use a custom confirmation message instead of alert/confirm
+                        if (window.confirm("Are you sure you want to delete this item?")) {
+                            deleteItem(itemId);
+                        }
                     });
                 });
+
+                document.querySelectorAll('.edit-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const itemId = e.currentTarget.getAttribute('data-id');
+                        editItem(itemId);
+                    });
+                });
+            };
+            
+            // Function to find an item by its ID and populate the form
+            const editItem = (itemId) => {
+                const items = loadItems();
+                const itemToEdit = items.find(item => item.id === itemId);
+                if (itemToEdit) {
+                    itemIdInput.value = itemToEdit.id;
+                    itemNameInput.value = itemToEdit.name;
+                    itemDescriptionInput.value = itemToEdit.description;
+                    itemPriceInput.value = itemToEdit.price;
+                    itemImageInput.value = itemToEdit.image || '';
+                    adminPanel.classList.remove('hidden');
+                    window.scrollTo({
+                        top: adminPanel.offsetTop - 20,
+                        behavior: 'smooth'
+                    });
+                }
             };
 
             // Function to delete an item
@@ -206,26 +276,30 @@
             // Handle form submission
             itemForm.addEventListener('submit', (e) => {
                 e.preventDefault();
-                const name = document.getElementById('item-name').value;
-                const description = document.getElementById('item-description').value;
-                const price = document.getElementById('item-price').value;
-                const image = document.getElementById('item-image').value;
-
-                // Create a unique ID for the item
-                const id = Date.now().toString();
-
-                const newItem = {
-                    id,
-                    name,
-                    description,
-                    price,
-                    image
-                };
-
-                const items = loadItems();
-                items.push(newItem);
-                saveItems(items);
+                const id = itemIdInput.value;
+                const name = itemNameInput.value;
+                const description = itemDescriptionInput.value;
+                const price = itemPriceInput.value;
+                const image = itemImageInput.value;
                 
+                let items = loadItems();
+
+                if (id) {
+                    // Editing an existing item
+                    items = items.map(item => item.id === id ? { id, name, description, price, image } : item);
+                } else {
+                    // Adding a new item
+                    const newItem = {
+                        id: Date.now().toString(),
+                        name,
+                        description,
+                        price,
+                        image
+                    };
+                    items.push(newItem);
+                }
+
+                saveItems(items);
                 itemForm.reset();
                 renderItems();
             });
