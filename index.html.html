@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For Sale - Everything Must Go!</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+        }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+
+    <!-- Header Section -->
+    <header class="bg-gray-900 text-white p-6 shadow-md rounded-b-lg">
+        <div class="container mx-auto flex flex-col sm:flex-row justify-between items-center">
+            <h1 class="text-3xl font-bold mb-2 sm:mb-0">For Sale</h1>
+            <nav>
+                <a href="#contact" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
+                    Contact Us
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="text-center mb-10">
+            <h2 class="text-4xl font-extrabold text-gray-900 mb-4">Everything Must Go!</h2>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                Welcome to our online garage sale. Browse the items below. All prices are negotiable.
+                For any questions or to purchase an item, please send an email.
+            </p>
+        </div>
+
+        <!-- Items Grid -->
+        <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+
+            <!-- Item 1 -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden transition-transform transform hover:scale-105">
+                <!-- Use a placeholder image for now. Replace with your own high-quality photos. -->
+                <img src="https://placehold.co/600x400/818181/FFFFFF?text=Item+Photo+1" alt="Placeholder image of a for-sale item" class="w-full h-48 object-cover">
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-2">Vintage Wooden Desk</h3>
+                    <p class="text-gray-600 mb-4">A beautiful, well-maintained vintage desk with a large workspace and a single drawer. Perfect for a home office or study.</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl font-bold text-blue-600">$150</span>
+                        <a href="#contact" class="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300">
+                            Inquire
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item 2 -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden transition-transform transform hover:scale-105">
+                <img src="https://placehold.co/600x400/818181/FFFFFF?text=Item+Photo+2" alt="Placeholder image of a for-sale item" class="w-full h-48 object-cover">
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-2">Ceramic Pot Set</h3>
+                    <p class="text-gray-600 mb-4">A set of three handmade ceramic pots in varying sizes. Ideal for houseplants or as decorative pieces.</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl font-bold text-blue-600">$40</span>
+                        <a href="#contact" class="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300">
+                            Inquire
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item 3 -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden transition-transform transform hover:scale-105">
+                <img src="https://placehold.co/600x400/818181/FFFFFF?text=Item+Photo+3" alt="Placeholder image of a for-sale item" class="w-full h-48 object-cover">
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-2">Electric Guitar (Used)</h3>
+                    <p class="text-gray-600 mb-4">A pre-owned electric guitar in excellent condition. Includes a soft case and a small practice amp.</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl font-bold text-blue-600">$250</span>
+                        <a href="#contact" class="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300">
+                            Inquire
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add more items by copying and pasting the "Item" div here -->
+        </div>
+
+        <!-- Contact Section -->
+        <section id="contact" class="mt-16 bg-gray-100 p-8 rounded-xl shadow-inner text-center">
+            <h2 class="text-3xl font-extrabold text-gray-900 mb-4">How to Inquire or Purchase</h2>
+            <p class="text-lg text-gray-600 mb-4">
+                If you're interested in an item, please contact us via email.
+            </p>
+            <!-- Important: Replace the email address with your own -->
+            <a href="mailto:your-email@example.com" class="text-blue-600 hover:text-blue-800 text-xl font-bold transition-colors duration-300">
+                your-email@example.com
+            </a>
+            <p class="text-sm text-gray-500 mt-2">
+                (Click to open your email client)
+            </p>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white p-6 mt-10 rounded-t-lg">
+        <div class="container mx-auto text-center text-sm">
+            <p>&copy; 2024 For Sale Website. All rights reserved.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
