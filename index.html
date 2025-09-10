@@ -26,6 +26,13 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #64748b;
         }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none; /* for IE and Edge */
+            scrollbar-width: none; /* for Firefox */
+        }
     </style>
 </head>
 <body class="antialiased text-gray-800">
@@ -34,10 +41,22 @@
     <header class="bg-gray-900 text-white p-6 shadow-md rounded-b-lg">
         <div class="container mx-auto flex flex-col sm:flex-row justify-between items-center">
             <h1 class="text-3xl font-bold mb-2 sm:mb-0">For Sale</h1>
-            <nav class="flex space-x-4 items-center">
+            <nav class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 items-center mt-4 sm:mt-0">
                 <a href="#contact" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
                     Contact Us
                 </a>
+                <select id="sort-select" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
+                    <option value="all">All Items</option>
+                    <option value="bridles">Bridles</option>
+                    <option value="saddles">Saddles</option>
+                    <option value="saddle pads">Saddle Pads</option>
+                    <option value="bits">Bits</option>
+                    <option value="parts and pieces">Parts and Pieces</option>
+                    <option value="saddle racks">Saddle Racks</option>
+                    <option value="spurs">Spurs</option>
+                    <option value="halters and lead ropes">Halters and Lead Ropes</option>
+                    <option value="other">Other</option>
+                </select>
                 <div class="relative">
                     <button id="admin-panel-btn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
                         Manage Items
@@ -55,9 +74,9 @@
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">
         <div class="text-center mb-10">
-            <h2 class="text-4xl font-extrabold text-gray-900 mb-4">Assorted Tack for Sale!</h2>
+            <h2 class="text-4xl font-extrabold text-gray-900 mb-4">Everything Must Go!</h2>
             <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-                Welcome to our online garage sale. Browse the items below. 
+                Welcome to our online garage sale. Browse the items below. All prices are negotiable.
                 For any questions or to purchase an item, please send an email.
             </p>
         </div>
@@ -85,6 +104,21 @@
                     <p class="mt-1 text-sm text-gray-500">
                         Upload your images to a public host (like Imgur or Google Drive) and paste the URLs here, separated by commas.
                     </p>
+                </div>
+                <div>
+                    <label for="item-category" class="block text-sm font-medium text-gray-700">Category</label>
+                    <select id="item-category" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2">
+                        <option value="">Select a category</option>
+                        <option value="bridles">Bridles</option>
+                        <option value="saddles">Saddles</option>
+                        <option value="saddle pads">Saddle Pads</option>
+                        <option value="bits">Bits</option>
+                        <option value="parts and pieces">Parts and Pieces</option>
+                        <option value="saddle racks">Saddle Racks</option>
+                        <option value="spurs">Spurs</option>
+                        <option value="halters and lead ropes">Halters and Lead Ropes</option>
+                        <option value="other">Other</option>
+                    </select>
                 </div>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
                     Save Item
@@ -135,6 +169,8 @@
             const itemDescriptionInput = document.getElementById('item-description');
             const itemPriceInput = document.getElementById('item-price');
             const itemImageInput = document.getElementById('item-image');
+            const itemCategoryInput = document.getElementById('item-category');
+            const sortSelect = document.getElementById('sort-select');
 
             // Set a simple password.
             // WARNING: This is NOT secure. The password is visible in the page source.
@@ -185,21 +221,27 @@
                 localStorage.setItem('forSaleItems', JSON.stringify(items));
             };
 
-            // Function to render items on the page
+            // Function to render items on the page based on the selected category
             const renderItems = () => {
                 itemsContainer.innerHTML = ''; // Clear existing items
-                const items = loadItems();
+                const allItems = loadItems();
+                const selectedCategory = sortSelect.value;
+                
+                let filteredItems = allItems;
+                if (selectedCategory !== 'all') {
+                    filteredItems = allItems.filter(item => item.category === selectedCategory);
+                }
 
-                if (items.length === 0) {
+                if (filteredItems.length === 0) {
                     itemsContainer.innerHTML = `
                         <div class="col-span-full text-center text-gray-500 mt-10">
-                            <p>No items listed yet. Use the Admin Panel to add your first item!</p>
+                            <p>No items listed yet in this category. Use the Admin Panel to add your first item!</p>
                         </div>
                     `;
                     return;
                 }
 
-                items.forEach(item => {
+                filteredItems.forEach(item => {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'bg-white rounded-xl shadow-lg overflow-hidden transition-transform transform hover:scale-105 relative';
                     
@@ -288,6 +330,7 @@
                     itemDescriptionInput.value = itemToEdit.description;
                     itemPriceInput.value = itemToEdit.price;
                     itemImageInput.value = itemToEdit.images ? itemToEdit.images.join(', ') : '';
+                    itemCategoryInput.value = itemToEdit.category || '';
                     adminPanel.classList.remove('hidden');
                     window.scrollTo({
                         top: adminPanel.offsetTop - 20,
@@ -312,12 +355,13 @@
                 const description = itemDescriptionInput.value;
                 const price = itemPriceInput.value;
                 const images = itemImageInput.value.split(',').map(url => url.trim()).filter(url => url.length > 0);
+                const category = itemCategoryInput.value;
                 
                 let items = loadItems();
 
                 if (id) {
                     // Editing an existing item
-                    items = items.map(item => item.id === id ? { id, name, description, price, images } : item);
+                    items = items.map(item => item.id === id ? { id, name, description, price, images, category } : item);
                 } else {
                     // Adding a new item
                     const newItem = {
@@ -325,7 +369,8 @@
                         name,
                         description,
                         price,
-                        images
+                        images,
+                        category
                     };
                     items.push(newItem);
                 }
@@ -334,6 +379,9 @@
                 itemForm.reset();
                 renderItems();
             });
+
+            // Listen for changes on the sort dropdown
+            sortSelect.addEventListener('change', renderItems);
 
             // Initial render of items when the page loads
             renderItems();
