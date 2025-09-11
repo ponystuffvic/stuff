@@ -195,357 +195,361 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // IMPORTANT: The following variables are provided by the environment. Do not change them.
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        let userId = null;
-        let isAuthReady = false;
+        document.addEventListener('DOMContentLoaded', () => {
 
-        setLogLevel('debug');
-
-        const setConnectionStatus = (message, isError = false) => {
-            const statusMessageEl = document.getElementById('connection-status');
-            if (statusMessageEl) {
-                statusMessageEl.textContent = message;
-                if (isError) {
-                    statusMessageEl.classList.remove('text-gray-500');
-                    statusMessageEl.classList.add('text-red-500');
-                } else {
-                    statusMessageEl.classList.remove('text-red-500');
-                    statusMessageEl.classList.add('text-gray-500');
-                }
-            }
-        };
-
-        setConnectionStatus("Connecting to database...");
-
-        // Authenticate the user
-        if (initialAuthToken) {
-            signInWithCustomToken(auth, initialAuthToken).then(() => {
-                console.log("Signed in with custom token.");
-            }).catch((error) => {
-                console.error("Custom token sign-in failed:", error);
-                setConnectionStatus("Connection failed. Please check your Firebase config.", true);
-            });
-        } else {
-             signInAnonymously(auth).then(() => {
-                console.log("Signed in anonymously.");
-            }).catch((error) => {
-                console.error("Anonymous sign-in failed:", error);
-                setConnectionStatus("Connection failed. Please check your Firebase config.", true);
-            });
-        }
-        
-        onAuthStateChanged(auth, (user) => {
-            const saveItemBtn = document.getElementById('save-item-btn');
-            if (user) {
-                userId = user.uid;
-                isAuthReady = true;
-                console.log("User signed in:", userId); // Your unique user ID will be printed here.
-                setConnectionStatus("Ready to save items!");
-                listenForItems();
-                if (saveItemBtn) {
-                    saveItemBtn.disabled = false;
-                    saveItemBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                }
-            } else {
-                console.log("User is signed out.");
-                isAuthReady = false;
-                setConnectionStatus("Connecting to database...");
-                if (saveItemBtn) {
-                    saveItemBtn.disabled = true;
-                    saveItemBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                }
-            }
-        });
-
-        window.app = app;
-        window.db = db;
-        window.auth = auth;
-        window.getUserId = () => userId;
-        window.isAuthReady = () => isAuthReady;
-        
-        const adminPanelBtn = document.getElementById('admin-panel-btn');
-        const adminPanel = document.getElementById('admin-panel');
-        const passwordFormContainer = document.getElementById('password-form-container');
-        const adminPasswordInput = document.getElementById('admin-password');
-        const passwordGoBtn = document.getElementById('password-go-btn');
-        const passwordError = document.getElementById('password-error');
-        const itemsContainer = document.getElementById('items-container');
-        const itemForm = document.getElementById('item-form');
-        const itemIdInput = document.getElementById('item-id');
-        const itemNameInput = document.getElementById('item-name');
-        const itemDescriptionInput = document.getElementById('item-description');
-        const itemPriceInput = document.getElementById('item-price');
-        const itemImageInput = document.getElementById('item-image');
-        const itemCategoryInput = document.getElementById('item-category');
-        const sortSelect = document.getElementById('sort-select');
-        const goToTopBtn = document.getElementById('go-to-top-btn');
-
-        const confirmModal = document.getElementById('confirm-modal');
-        const confirmYesBtn = document.getElementById('confirm-yes-btn');
-        const confirmNoBtn = document.getElementById('confirm-no-btn');
-        let itemToDeleteId = null;
-
-        const ADMIN_PASSWORD = "passwordword332211";
-        
-        passwordGoBtn.addEventListener('click', () => {
-            if (adminPasswordInput.value === ADMIN_PASSWORD) {
-                passwordFormContainer.classList.add('hidden');
-                itemForm.classList.remove('hidden');
-            } else {
-                console.error('Incorrect password. Please try again.');
-                passwordError.classList.remove('hidden');
-                adminPasswordInput.value = '';
-            }
-        });
-        
-        goToTopBtn.addEventListener('click', () => {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-        });
-
-        const categories = [
-            "bridles", "saddles", "saddle pads", "bits", "parts and pieces",
-            "saddle racks", "spurs", "halters and lead ropes", "other"
-        ];
-        
-        const renderItems = (items) => {
-            itemsContainer.innerHTML = '';
-            const groupedItems = items.reduce((acc, item) => {
-                const category = item.category || 'other';
-                if (!acc[category]) {
-                    acc[category] = [];
-                }
-                acc[category].push(item);
-                return acc;
-            }, {});
-
-            categories.forEach(category => {
-                const categoryDiv = document.createElement('div');
-                categoryDiv.id = category;
-                categoryDiv.className = 'mt-8 pt-4';
-
-                const categoryTitle = document.createElement('h3');
-                categoryTitle.className = 'text-2xl font-bold mb-4 capitalize';
-                categoryTitle.textContent = category;
-                categoryDiv.appendChild(categoryTitle);
-
-                const gridContainer = document.createElement('div');
-                gridContainer.className = 'grid gap-8 sm:grid-cols-2 lg:grid-cols-3';
-                
-                const itemsInCategory = groupedItems[category] || [];
-                if (itemsInCategory.length === 0) {
-                    gridContainer.innerHTML = `<p class="text-gray-500">No items listed in this category yet.</p>`;
-                } else {
-                    itemsInCategory.forEach((item, index) => {
-                        const itemDiv = document.createElement('div');
-                        itemDiv.className = 'bg-white rounded-xl shadow-lg overflow-hidden transition-transform transform hover:scale-105 relative';
-                        
-                        const imageGallery = document.createElement('div');
-                        imageGallery.className = 'flex overflow-x-auto snap-x snap-mandatory hide-scrollbar';
-                        const imageUrls = Array.isArray(item.images) ? item.images : [];
-                        if (imageUrls.length > 0) {
-                            imageUrls.forEach(imageSrc => {
-                                const img = document.createElement('img');
-                                img.src = imageSrc;
-                                img.alt = `Image of ${item.name}`;
-                                img.className = 'w-full h-48 object-cover flex-shrink-0 snap-center';
-                                imageGallery.appendChild(img);
-                            });
-                        } else {
-                            const img = document.createElement('img');
-                            img.src = 'https://placehold.co/600x400/818181/FFFFFF?text=No+Photo';
-                            img.alt = 'No photo available';
-                            img.className = 'w-full h-48 object-cover';
-                            imageGallery.appendChild(img);
-                        }
-
-                        itemDiv.appendChild(imageGallery);
-
-                        const contentDiv = document.createElement('div');
-                        contentDiv.className = 'p-6';
-                        contentDiv.innerHTML = `
-                            <h3 class="text-xl font-bold mb-2">${item.name}</h3>
-                            <p class="text-gray-600 mb-4">${item.description}</p>
-                            <div class="flex items-center justify-between">
-                                <span class="text-2xl font-bold text-blue-600">$${item.price}</span>
-                                <div class="space-x-2">
-                                    <button class="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300 edit-btn" data-id="${item.id}">
-                                        Edit
-                                    </button>
-                                    <a href="#contact" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300">
-                                        Inquire
-                                    </a>
-                                </div>
-                            </div>
-                        `;
-                        itemDiv.appendChild(contentDiv);
-
-                        const deleteBtn = document.createElement('button');
-                        deleteBtn.className = 'absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 text-xs opacity-80 hover:opacity-100 transition-opacity delete-btn';
-                        deleteBtn.setAttribute('data-id', item.id);
-                        deleteBtn.setAttribute('title', 'Delete Item');
-                        deleteBtn.innerHTML = `
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clip-rule="evenodd" />
-                            </svg>
-                        `;
-                        itemDiv.appendChild(deleteBtn);
-
-                        gridContainer.appendChild(itemDiv);
-                    });
-                }
-                
-                categoryDiv.appendChild(gridContainer);
-                itemsContainer.appendChild(categoryDiv);
-            });
+            // IMPORTANT: The following variables are provided by the environment. Do not change them.
+            const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
             
-            document.querySelectorAll('.delete-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const itemId = e.currentTarget.getAttribute('data-id');
-                    showConfirmModal(itemId);
-                });
-            });
-
-            document.querySelectorAll('.edit-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const itemId = e.currentTarget.getAttribute('data-id');
-                    editItem(itemId);
-                });
-            });
-        };
-
-        const showConfirmModal = (itemId) => {
-            itemToDeleteId = itemId;
-            confirmModal.classList.remove('hidden');
-        };
-
-        const hideConfirmModal = () => {
-            confirmModal.classList.add('hidden');
-            itemToDeleteId = null;
-        };
-
-        confirmYesBtn.addEventListener('click', () => {
-            if (itemToDeleteId) {
-                deleteItem(itemToDeleteId);
-                hideConfirmModal();
-            }
-        });
-
-        confirmNoBtn.addEventListener('click', () => {
-            hideConfirmModal();
-        });
-        
-        const deleteItem = async (itemId) => {
-            if (window.isAuthReady && window.db) {
-                const itemDocRef = doc(window.db, `artifacts/${window.app.options.projectId}/public/data/items`, itemId);
-                try {
-                    await deleteDoc(itemDocRef);
-                    console.log("Document successfully deleted!");
-                } catch (e) {
-                    console.error("Error removing document: ", e);
-                }
-            } else {
-                console.error("Database connection not ready. Cannot delete item.");
-            }
-        };
-
-        const editItem = (itemId) => {
-            const itemToEdit = window.currentItems.find(item => item.id === itemId);
-            if (itemToEdit) {
-                itemIdInput.value = itemToEdit.id;
-                itemNameInput.value = itemToEdit.name;
-                itemDescriptionInput.value = itemToEdit.description;
-                itemPriceInput.value = itemToEdit.price;
-                itemImageInput.value = itemToEdit.images ? itemToEdit.images.join(', ') : '';
-                itemCategoryInput.value = itemToEdit.category || '';
-                passwordFormContainer.classList.add('hidden');
-                itemForm.classList.remove('hidden');
-                window.scrollTo({
-                    top: adminPanel.offsetTop - 20,
-                    behavior: 'smooth'
-                });
-            }
-        };
-
-        itemForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            console.log("Form submitted.");
-
-            const id = itemIdInput.value;
-            const name = itemNameInput.value;
-            const description = itemDescriptionInput.value;
-            const price = parseFloat(itemPriceInput.value);
-            const images = itemImageInput.value.split(',').map(url => url.trim()).filter(url => url.length > 0);
-            const category = itemCategoryInput.value;
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
             
-            if (window.isAuthReady && window.db) {
-                if (id) {
-                    const itemDocRef = doc(window.db, `artifacts/${window.app.options.projectId}/public/data/items`, id);
-                    try {
-                        await updateDoc(itemDocRef, { name, description, price, images, category });
-                        console.log("Document successfully updated!");
-                    } catch (e) {
-                        console.error("Error updating document: ", e);
-                    }
-                } else {
-                    try {
-                        await addDoc(collection(window.db, `artifacts/${window.app.options.projectId}/public/data/items`), { name, description, price, images, category });
-                        console.log("Document successfully written!");
-                    } catch (e) {
-                        console.error("Error adding document: ", e);
+            let userId = null;
+            let isAuthReady = false;
+
+            setLogLevel('debug');
+
+            const setConnectionStatus = (message, isError = false) => {
+                const statusMessageEl = document.getElementById('connection-status');
+                if (statusMessageEl) {
+                    statusMessageEl.textContent = message;
+                    if (isError) {
+                        statusMessageEl.classList.remove('text-gray-500');
+                        statusMessageEl.classList.add('text-red-500');
+                    } else {
+                        statusMessageEl.classList.remove('text-red-500');
+                        statusMessageEl.classList.add('text-gray-500');
                     }
                 }
-                itemForm.reset();
-                itemIdInput.value = '';
-            } else {
-                console.error("Database connection not ready. Cannot save item.");
-            }
-        });
+            };
 
-        sortSelect.addEventListener('change', (e) => {
-            const targetId = e.target.value;
-            if (targetId === 'all') {
+            setConnectionStatus("Connecting to database...");
+
+            // Authenticate the user
+            if (initialAuthToken) {
+                signInWithCustomToken(auth, initialAuthToken).then(() => {
+                    console.log("Signed in with custom token.");
+                }).catch((error) => {
+                    console.error("Custom token sign-in failed:", error);
+                    setConnectionStatus("Connection failed. Please check your Firebase config.", true);
+                });
+            } else {
+                signInAnonymously(auth).then(() => {
+                    console.log("Signed in anonymously.");
+                }).catch((error) => {
+                    console.error("Anonymous sign-in failed:", error);
+                    setConnectionStatus("Connection failed. Please check your Firebase config.", true);
+                });
+            }
+            
+            onAuthStateChanged(auth, (user) => {
+                const saveItemBtn = document.getElementById('save-item-btn');
+                if (user) {
+                    userId = user.uid;
+                    isAuthReady = true;
+                    console.log("User signed in:", userId); // Your unique user ID will be printed here.
+                    setConnectionStatus("Ready to save items!");
+                    listenForItems();
+                    if (saveItemBtn) {
+                        saveItemBtn.disabled = false;
+                        saveItemBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                } else {
+                    console.log("User is signed out.");
+                    isAuthReady = false;
+                    setConnectionStatus("Connecting to database...");
+                    if (saveItemBtn) {
+                        saveItemBtn.disabled = true;
+                        saveItemBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    }
+                }
+            });
+
+            window.app = app;
+            window.db = db;
+            window.auth = auth;
+            window.getUserId = () => userId;
+            window.isAuthReady = () => isAuthReady;
+            
+            const adminPanelBtn = document.getElementById('admin-panel-btn');
+            const adminPanel = document.getElementById('admin-panel');
+            const passwordFormContainer = document.getElementById('password-form-container');
+            const adminPasswordInput = document.getElementById('admin-password');
+            const passwordGoBtn = document.getElementById('password-go-btn');
+            const passwordError = document.getElementById('password-error');
+            const itemsContainer = document.getElementById('items-container');
+            const itemForm = document.getElementById('item-form');
+            const itemIdInput = document.getElementById('item-id');
+            const itemNameInput = document.getElementById('item-name');
+            const itemDescriptionInput = document.getElementById('item-description');
+            const itemPriceInput = document.getElementById('item-price');
+            const itemImageInput = document.getElementById('item-image');
+            const itemCategoryInput = document.getElementById('item-category');
+            const sortSelect = document.getElementById('sort-select');
+            const goToTopBtn = document.getElementById('go-to-top-btn');
+
+            const confirmModal = document.getElementById('confirm-modal');
+            const confirmYesBtn = document.getElementById('confirm-yes-btn');
+            const confirmNoBtn = document.getElementById('confirm-no-btn');
+            let itemToDeleteId = null;
+
+            const ADMIN_PASSWORD = "passwordword332211";
+            
+            passwordGoBtn.addEventListener('click', () => {
+                console.log("Go button clicked!");
+                if (adminPasswordInput.value === ADMIN_PASSWORD) {
+                    passwordFormContainer.classList.add('hidden');
+                    itemForm.classList.remove('hidden');
+                } else {
+                    console.error('Incorrect password. Please try again.');
+                    passwordError.classList.remove('hidden');
+                    adminPasswordInput.value = '';
+                }
+            });
+            
+            goToTopBtn.addEventListener('click', () => {
                 window.scrollTo({
                     top: 0,
                     behavior: 'smooth'
                 });
-            } else {
-                const targetElement = document.getElementById(targetId);
-                if (targetElement) {
+            });
+
+            const categories = [
+                "bridles", "saddles", "saddle pads", "bits", "parts and pieces",
+                "saddle racks", "spurs", "halters and lead ropes", "other"
+            ];
+            
+            const renderItems = (items) => {
+                itemsContainer.innerHTML = '';
+                const groupedItems = items.reduce((acc, item) => {
+                    const category = item.category || 'other';
+                    if (!acc[category]) {
+                        acc[category] = [];
+                    }
+                    acc[category].push(item);
+                    return acc;
+                }, {});
+
+                categories.forEach(category => {
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.id = category;
+                    categoryDiv.className = 'mt-8 pt-4';
+
+                    const categoryTitle = document.createElement('h3');
+                    categoryTitle.className = 'text-2xl font-bold mb-4 capitalize';
+                    categoryTitle.textContent = category;
+                    categoryDiv.appendChild(categoryTitle);
+
+                    const gridContainer = document.createElement('div');
+                    gridContainer.className = 'grid gap-8 sm:grid-cols-2 lg:grid-cols-3';
+                    
+                    const itemsInCategory = groupedItems[category] || [];
+                    if (itemsInCategory.length === 0) {
+                        gridContainer.innerHTML = `<p class="text-gray-500">No items listed in this category yet.</p>`;
+                    } else {
+                        itemsInCategory.forEach((item, index) => {
+                            const itemDiv = document.createElement('div');
+                            itemDiv.className = 'bg-white rounded-xl shadow-lg overflow-hidden transition-transform transform hover:scale-105 relative';
+                            
+                            const imageGallery = document.createElement('div');
+                            imageGallery.className = 'flex overflow-x-auto snap-x snap-mandatory hide-scrollbar';
+                            const imageUrls = Array.isArray(item.images) ? item.images : [];
+                            if (imageUrls.length > 0) {
+                                imageUrls.forEach(imageSrc => {
+                                    const img = document.createElement('img');
+                                    img.src = imageSrc;
+                                    img.alt = `Image of ${item.name}`;
+                                    img.className = 'w-full h-48 object-cover flex-shrink-0 snap-center';
+                                    imageGallery.appendChild(img);
+                                });
+                            } else {
+                                const img = document.createElement('img');
+                                img.src = 'https://placehold.co/600x400/818181/FFFFFF?text=No+Photo';
+                                img.alt = 'No photo available';
+                                img.className = 'w-full h-48 object-cover';
+                                imageGallery.appendChild(img);
+                            }
+
+                            itemDiv.appendChild(imageGallery);
+
+                            const contentDiv = document.createElement('div');
+                            contentDiv.className = 'p-6';
+                            contentDiv.innerHTML = `
+                                <h3 class="text-xl font-bold mb-2">${item.name}</h3>
+                                <p class="text-gray-600 mb-4">${item.description}</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-2xl font-bold text-blue-600">$${item.price}</span>
+                                    <div class="space-x-2">
+                                        <button class="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300 edit-btn" data-id="${item.id}">
+                                            Edit
+                                        </button>
+                                        <a href="#contact" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300">
+                                            Inquire
+                                        </a>
+                                    </div>
+                                </div>
+                            `;
+                            itemDiv.appendChild(contentDiv);
+
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.className = 'absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 text-xs opacity-80 hover:opacity-100 transition-opacity delete-btn';
+                            deleteBtn.setAttribute('data-id', item.id);
+                            deleteBtn.setAttribute('title', 'Delete Item');
+                            deleteBtn.innerHTML = `
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clip-rule="evenodd" />
+                                </svg>
+                            `;
+                            itemDiv.appendChild(deleteBtn);
+
+                            gridContainer.appendChild(itemDiv);
+                        });
+                    }
+                    
+                    categoryDiv.appendChild(gridContainer);
+                    itemsContainer.appendChild(categoryDiv);
+                });
+                
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const itemId = e.currentTarget.getAttribute('data-id');
+                        showConfirmModal(itemId);
+                    });
+                });
+
+                document.querySelectorAll('.edit-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const itemId = e.currentTarget.getAttribute('data-id');
+                        editItem(itemId);
+                    });
+                });
+            };
+
+            const showConfirmModal = (itemId) => {
+                itemToDeleteId = itemId;
+                confirmModal.classList.remove('hidden');
+            };
+
+            const hideConfirmModal = () => {
+                confirmModal.classList.add('hidden');
+                itemToDeleteId = null;
+            };
+
+            confirmYesBtn.addEventListener('click', () => {
+                if (itemToDeleteId) {
+                    deleteItem(itemToDeleteId);
+                    hideConfirmModal();
+                }
+            });
+
+            confirmNoBtn.addEventListener('click', () => {
+                hideConfirmModal();
+            });
+            
+            const deleteItem = async (itemId) => {
+                if (window.isAuthReady && window.db) {
+                    const itemDocRef = doc(window.db, `artifacts/${window.app.options.projectId}/public/data/items`, itemId);
+                    try {
+                        await deleteDoc(itemDocRef);
+                        console.log("Document successfully deleted!");
+                    } catch (e) {
+                        console.error("Error removing document: ", e);
+                    }
+                } else {
+                    console.error("Database connection not ready. Cannot delete item.");
+                }
+            };
+
+            const editItem = (itemId) => {
+                const itemToEdit = window.currentItems.find(item => item.id === itemId);
+                if (itemToEdit) {
+                    itemIdInput.value = itemToEdit.id;
+                    itemNameInput.value = itemToEdit.name;
+                    itemDescriptionInput.value = itemToEdit.description;
+                    itemPriceInput.value = itemToEdit.price;
+                    itemImageInput.value = itemToEdit.images ? itemToEdit.images.join(', ') : '';
+                    itemCategoryInput.value = itemToEdit.category || '';
+                    passwordFormContainer.classList.add('hidden');
+                    itemForm.classList.remove('hidden');
                     window.scrollTo({
-                        top: targetElement.offsetTop - 100,
+                        top: adminPanel.offsetTop - 20,
                         behavior: 'smooth'
                     });
                 }
-            }
-        });
+            };
 
-        const listenForItems = () => {
-            if (!window.db || !window.app.options.projectId) {
-                console.error("Firebase not initialized. Cannot listen for items.");
-                return;
-            }
-            const itemsCollectionRef = collection(window.db, `artifacts/${window.app.options.projectId}/public/data/items`);
-            onSnapshot(itemsCollectionRef, (querySnapshot) => {
-                const items = [];
-                querySnapshot.forEach((doc) => {
-                    items.push({ id: doc.id, ...doc.data() });
-                });
-                window.currentItems = items;
-                renderItems(items);
-            }, (error) => {
-                console.error("Error listening to items collection:", error);
+            itemForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                console.log("Form submitted.");
+
+                const id = itemIdInput.value;
+                const name = itemNameInput.value;
+                const description = itemDescriptionInput.value;
+                const price = parseFloat(itemPriceInput.value);
+                const images = itemImageInput.value.split(',').map(url => url.trim()).filter(url => url.length > 0);
+                const category = itemCategoryInput.value;
+                
+                if (window.isAuthReady && window.db) {
+                    if (id) {
+                        const itemDocRef = doc(window.db, `artifacts/${window.app.options.projectId}/public/data/items`, id);
+                        try {
+                            await updateDoc(itemDocRef, { name, description, price, images, category });
+                            console.log("Document successfully updated!");
+                        } catch (e) {
+                            console.error("Error updating document: ", e);
+                        }
+                    } else {
+                        try {
+                            await addDoc(collection(window.db, `artifacts/${window.app.options.projectId}/public/data/items`), { name, description, price, images, category });
+                            console.log("Document successfully written!");
+                        } catch (e) {
+                            console.error("Error adding document: ", e);
+                        }
+                    }
+                    itemForm.reset();
+                    itemIdInput.value = '';
+                } else {
+                    console.error("Database connection not ready. Cannot save item.");
+                }
             });
-        };
+
+            sortSelect.addEventListener('change', (e) => {
+                const targetId = e.target.value;
+                if (targetId === 'all') {
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                } else {
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 100,
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            });
+
+            const listenForItems = () => {
+                if (!window.db || !window.app.options.projectId) {
+                    console.error("Firebase not initialized. Cannot listen for items.");
+                    return;
+                }
+                const itemsCollectionRef = collection(window.db, `artifacts/${window.app.options.projectId}/public/data/items`);
+                onSnapshot(itemsCollectionRef, (querySnapshot) => {
+                    const items = [];
+                    querySnapshot.forEach((doc) => {
+                        items.push({ id: doc.id, ...doc.data() });
+                    });
+                    window.currentItems = items;
+                    renderItems(items);
+                }, (error) => {
+                    console.error("Error listening to items collection:", error);
+                });
+            };
+        });
     </script>
 </body>
 </html>
