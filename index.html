@@ -119,12 +119,12 @@
         <!-- Admin Panel -->
         <section id="admin-panel" class="bg-gray-100 p-8 rounded-xl shadow-inner my-10">
             <h2 class="text-3xl font-extrabold text-gray-900 mb-6 text-center">Admin Panel</h2>
-            <div id="password-form-container" class="max-w-md mx-auto space-y-4">
+            <form id="password-form" class="max-w-md mx-auto space-y-4">
                 <p class="text-center text-gray-600">Enter the password to access the admin panel:</p>
                 <input type="password" id="admin-password" placeholder="Enter password" class="w-full p-2 border rounded-md text-gray-900">
-                <button id="password-go-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors duration-300">Go</button>
+                <button type="submit" id="password-go-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors duration-300">Go</button>
                 <p id="password-error" class="text-red-500 text-center hidden">Incorrect password. Please try again.</p>
-            </div>
+            </form>
             <form id="item-form" class="max-w-xl mx-auto space-y-4 hidden">
                 <input type="hidden" id="item-id">
                 <div>
@@ -196,6 +196,7 @@
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         document.addEventListener('DOMContentLoaded', () => {
+            console.log("DOM is fully loaded.");
 
             // IMPORTANT: The following variables are provided by the environment. Do not change them.
             const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
@@ -274,9 +275,8 @@
             
             const adminPanelBtn = document.getElementById('admin-panel-btn');
             const adminPanel = document.getElementById('admin-panel');
-            const passwordFormContainer = document.getElementById('password-form-container');
+            const passwordForm = document.getElementById('password-form');
             const adminPasswordInput = document.getElementById('admin-password');
-            const passwordGoBtn = document.getElementById('password-go-btn');
             const passwordError = document.getElementById('password-error');
             const itemsContainer = document.getElementById('items-container');
             const itemForm = document.getElementById('item-form');
@@ -296,13 +296,15 @@
 
             const ADMIN_PASSWORD = "passwordword332211";
             
-            passwordGoBtn.addEventListener('click', () => {
-                console.log("Go button clicked!");
+            passwordForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                console.log("Password form submitted.");
                 if (adminPasswordInput.value === ADMIN_PASSWORD) {
-                    passwordFormContainer.classList.add('hidden');
+                    console.log("Correct password entered. Displaying admin panel.");
+                    passwordForm.classList.add('hidden');
                     itemForm.classList.remove('hidden');
                 } else {
-                    console.error('Incorrect password. Please try again.');
+                    console.log("Incorrect password. Please try again.");
                     passwordError.classList.remove('hidden');
                     adminPasswordInput.value = '';
                 }
@@ -470,7 +472,7 @@
                     itemPriceInput.value = itemToEdit.price;
                     itemImageInput.value = itemToEdit.images ? itemToEdit.images.join(', ') : '';
                     itemCategoryInput.value = itemToEdit.category || '';
-                    passwordFormContainer.classList.add('hidden');
+                    passwordForm.classList.add('hidden');
                     itemForm.classList.remove('hidden');
                     window.scrollTo({
                         top: adminPanel.offsetTop - 20,
