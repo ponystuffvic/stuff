@@ -339,16 +339,9 @@
             // --- Event Listeners and Logic ---
             
             adminPanelBtn.addEventListener('click', (e) => {
-                e.preventDefault(); // This is the key fix to stop the navigation
-                if (isAdmin) {
-                    // Already logged in, show admin panel
-                    loginPanel.classList.add('hidden');
-                    adminPanel.classList.remove('hidden');
-                } else {
-                    // Not logged in, show login panel
-                    loginPanel.classList.remove('hidden');
-                    adminPanel.classList.add('hidden');
-                }
+                e.preventDefault();
+                loginPanel.classList.remove('hidden');
+                adminPanel.classList.add('hidden');
             });
 
             loginBtn.addEventListener('click', () => {
