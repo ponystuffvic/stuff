@@ -318,23 +318,6 @@
                 saveItemBtn.classList.remove('bg-blue-400', 'cursor-not-allowed');
                 saveItemBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
             }
-
-            const checkAdminAccess = () => {
-                const password = passwordInput.value;
-                // Simple hardcoded password for demonstration.
-                // In a real app, this should be an encrypted token or secure method.
-                if (password === 'admin123') {
-                    // This is a simplified "admin" check for the demo
-                    // In a real app, you would verify this on the server
-                    loginStatusEl.textContent = '';
-                    loginPanel.classList.add('hidden');
-                    adminPanel.classList.remove('hidden');
-                    return true;
-                } else {
-                    loginStatusEl.textContent = 'Invalid password.';
-                    return false;
-                }
-            };
             
             // --- Event Listeners and Logic ---
             
@@ -345,9 +328,14 @@
             });
 
             loginBtn.addEventListener('click', () => {
-                if (checkAdminAccess()) {
+                const password = passwordInput.value;
+                if (password === 'admin123') {
+                    // CRITICAL FIX: Hide login panel and show admin panel on successful login.
                     isAdmin = true;
-                    // The auth listener will pick up the new user and start the item listener
+                    loginPanel.classList.add('hidden');
+                    adminPanel.classList.remove('hidden');
+                } else {
+                    loginStatusEl.textContent = 'Invalid password.';
                 }
             });
             
