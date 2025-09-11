@@ -338,9 +338,13 @@
             });
             
             // Fix for Go to Top button
-            goToTopBtn.addEventListener('click', () => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            });
+            if (goToTopBtn) {
+                goToTopBtn.addEventListener('click', () => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            } else {
+                console.error("Go to Top button not found.");
+            }
 
             // Handles category sorting
             sortSelect.addEventListener('change', (e) => {
