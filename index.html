@@ -127,7 +127,7 @@
                     <p id="password-error" class="text-red-500 text-center hidden">Incorrect password. Please try again.</p>
                 </form>
                 <form id="item-form" class="max-w-xl mx-auto space-y-4 hidden">
-                    <p id="password-success" class="text-green-500 text-center font-bold mb-4">Password accepted. You can now manage items.</p>
+                    <p id="password-success" class="text-green-500 text-center font-bold mb-4 hidden">Password accepted. You can now manage items.</p>
                     <input type="hidden" id="item-id">
                     <div>
                         <label for="item-name" class="block text-sm font-medium text-gray-700">Item Name</label>
@@ -217,6 +217,7 @@
             const passwordForm = document.getElementById('password-form');
             const adminPasswordInput = document.getElementById('admin-password');
             const passwordError = document.getElementById('password-error');
+            const passwordSuccess = document.getElementById('password-success');
             const itemForm = document.getElementById('item-form');
             const itemsContainer = document.getElementById('items-container');
             const saveItemBtn = document.getElementById('save-item-btn');
@@ -270,17 +271,20 @@
 
             // --- Event Listeners and Logic ---
             
-            // Refactored to listen for click event on the button for reliability
+            // Password form handler - now more reliable
             passwordForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 console.log("Password entered:", adminPasswordInput.value);
                 if (adminPasswordInput.value === ADMIN_PASSWORD) {
                     console.log("Correct password entered. Displaying admin panel.");
+                    passwordError.classList.add('hidden');
                     passwordForm.classList.add('hidden');
                     itemForm.classList.remove('hidden');
+                    passwordSuccess.classList.remove('hidden'); // Show success message
                 } else {
                     console.log("Incorrect password. Please try again.");
                     passwordError.classList.remove('hidden');
+                    passwordSuccess.classList.add('hidden');
                     adminPasswordInput.value = '';
                 }
             });
@@ -333,7 +337,7 @@
                 hideConfirmModal();
             });
             
-            // Handles 'Go to Top' button
+            // Fix for Go to Top button
             goToTopBtn.addEventListener('click', () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
