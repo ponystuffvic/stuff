@@ -270,7 +270,7 @@
 
             // --- Event Listeners and Logic ---
             
-            // Re-written password form handler to be more reliable
+            // Refactored to listen for click event on the button for reliability
             passwordForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 console.log("Password entered:", adminPasswordInput.value);
