@@ -298,10 +298,12 @@
             
             // --- Event Listeners and Logic ---
             
-            // FIX: This button now simply reveals the admin panel directly.
+            // FIX: This button now simply reveals the admin panel and scrolls to it.
             adminPanelBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                adminPanel.classList.remove('hidden');
+                console.log("Admin Panel button clicked. Toggling visibility.");
+                adminPanel.classList.toggle('hidden');
+                adminPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
             
             // Handles the item creation/update form
