@@ -192,32 +192,13 @@
     <!-- Firebase and JavaScript -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyBlm9px9rKkknUNlBhhM_JlsyH32OtDdx4",
-    authDomain: "tack-shop.firebaseapp.com",
-    projectId: "tack-shop",
-    storageBucket: "tack-shop.firebasestorage.app",
-    messagingSenderId: "454784761285",
-    appId: "1:454784761285:web:0ab1df16d0029c97e6dfac",
-    measurementId: "G-4TPWCN39GZ"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
+        // IMPORTANT: The following variables are provided by the environment. Do not change them.
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
@@ -242,13 +223,24 @@
         };
 
         setConnectionStatus("Connecting to database...");
-        signInAnonymously(auth).then(() => {
-            console.log("Signed in anonymously.");
-        }).catch((error) => {
-            console.error("Anonymous sign-in failed:", error);
-            setConnectionStatus("Connection failed. Please check your Firebase config.", true);
-        });
 
+        // Authenticate the user
+        if (initialAuthToken) {
+            signInWithCustomToken(auth, initialAuthToken).then(() => {
+                console.log("Signed in with custom token.");
+            }).catch((error) => {
+                console.error("Custom token sign-in failed:", error);
+                setConnectionStatus("Connection failed. Please check your Firebase config.", true);
+            });
+        } else {
+             signInAnonymously(auth).then(() => {
+                console.log("Signed in anonymously.");
+            }).catch((error) => {
+                console.error("Anonymous sign-in failed:", error);
+                setConnectionStatus("Connection failed. Please check your Firebase config.", true);
+            });
+        }
+        
         onAuthStateChanged(auth, (user) => {
             const saveItemBtn = document.getElementById('save-item-btn');
             if (user) {
