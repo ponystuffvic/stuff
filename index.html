@@ -122,7 +122,7 @@
             <div id="admin-panel-content">
                 <form id="password-form" class="max-w-md mx-auto space-y-4">
                     <p class="text-center text-gray-600">Enter the password to access the admin panel:</p>
-                    <input type="password" id="admin-password" placeholder="Enter password" class="w-full p-2 border rounded-md text-gray-900">
+                    <input type="password" id="admin-password" placeholder="Enter password" class="w-full p-2 border rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <button type="submit" id="password-go-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors duration-300">Go</button>
                     <p id="password-error" class="text-red-500 text-center hidden">Incorrect password. Please try again.</p>
                 </form>
@@ -237,7 +237,8 @@
             const confirmNoBtn = document.getElementById('confirm-no-btn');
             let itemToDeleteId = null;
 
-            const ADMIN_PASSWORD = "passwordword332211";
+            // New, simple password
+            const ADMIN_PASSWORD = "test";
             const categories = [
                 "bridles", "saddles", "saddle pads", "bits", "parts and pieces",
                 "saddle racks", "spurs", "halters and lead ropes", "other"
@@ -271,16 +272,19 @@
 
             // --- Event Listeners and Logic ---
             
-            // Password form handler - now more reliable
+            // Password form handler - now with a delay for visual feedback
             passwordForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 console.log("Password entered:", adminPasswordInput.value);
+                console.log("Correct password is:", ADMIN_PASSWORD);
                 if (adminPasswordInput.value === ADMIN_PASSWORD) {
                     console.log("Correct password entered. Displaying admin panel.");
                     passwordError.classList.add('hidden');
-                    passwordForm.classList.add('hidden');
-                    itemForm.classList.remove('hidden');
                     passwordSuccess.classList.remove('hidden'); // Show success message
+                    setTimeout(() => {
+                        passwordForm.classList.add('hidden');
+                        itemForm.classList.remove('hidden');
+                    }, 500); // 500ms delay to show success message
                 } else {
                     console.log("Incorrect password. Please try again.");
                     passwordError.classList.remove('hidden');
