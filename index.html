@@ -28,7 +28,22 @@
         let userId = null;
         let isAuthReady = false;
 
+        const setConnectionStatus = (message, isError = false) => {
+            const statusMessageEl = document.getElementById('connection-status');
+            if (statusMessageEl) {
+                statusMessageEl.textContent = message;
+                if (isError) {
+                    statusMessageEl.classList.remove('text-gray-500');
+                    statusMessageEl.classList.add('text-red-500');
+                } else {
+                    statusMessageEl.classList.remove('text-red-500');
+                    statusMessageEl.classList.add('text-gray-500');
+                }
+            }
+        };
+
         // Handle authentication with custom token or anonymously
+        setConnectionStatus("Connecting to database...");
         if (initialAuthToken) {
             signInWithCustomToken(auth, initialAuthToken)
                 .then(() => {
@@ -36,11 +51,13 @@
                 })
                 .catch((error) => {
                     console.error("Custom token sign-in failed:", error);
+                    setConnectionStatus("Connection failed. Please refresh the page.", true);
                     signInAnonymously(auth);
                 });
         } else {
             signInAnonymously(auth).catch((error) => {
                 console.error("Anonymous sign-in failed:", error);
+                setConnectionStatus("Connection failed. Please refresh the page.", true);
             });
         }
 
@@ -50,6 +67,7 @@
                 userId = user.uid;
                 isAuthReady = true;
                 console.log("User signed in:", userId);
+                setConnectionStatus("Ready to save items!");
                 // Start listening for items once authenticated
                 listenForItems();
                 if (saveItemBtn) {
@@ -59,6 +77,7 @@
             } else {
                 console.log("User is signed out.");
                 isAuthReady = false;
+                setConnectionStatus("Connecting to database...");
                 if (saveItemBtn) {
                     saveItemBtn.disabled = true;
                     saveItemBtn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -231,6 +250,7 @@
                 <button type="submit" id="save-item-btn" disabled class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300 opacity-50 cursor-not-allowed">
                     Save Item
                 </button>
+                <p id="connection-status" class="mt-2 text-center text-sm text-gray-500"></p>
             </form>
         </section>
     </main>
