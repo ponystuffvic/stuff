@@ -9,13 +9,20 @@
     <!-- Firebase Libraries -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, query, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // IMPORTANT: Global variables are required for the immersive environment.
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // IMPORTANT: The following is a placeholder for your Firebase configuration.
+        // TODO: PASTE YOUR FIREBASE CONFIG HERE
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        const appId = firebaseConfig.projectId;
 
         // Set log level for debugging
         setLogLevel('debug');
@@ -42,24 +49,14 @@
             }
         };
 
-        // Handle authentication with custom token or anonymously
+        // Handle authentication with anonymous sign-in
         setConnectionStatus("Connecting to database...");
-        if (initialAuthToken) {
-            signInWithCustomToken(auth, initialAuthToken)
-                .then(() => {
-                    console.log("Signed in with custom token.");
-                })
-                .catch((error) => {
-                    console.error("Custom token sign-in failed:", error);
-                    setConnectionStatus("Connection failed. Please refresh the page.", true);
-                    signInAnonymously(auth);
-                });
-        } else {
-            signInAnonymously(auth).catch((error) => {
-                console.error("Anonymous sign-in failed:", error);
-                setConnectionStatus("Connection failed. Please refresh the page.", true);
-            });
-        }
+        signInAnonymously(auth).then(() => {
+            console.log("Signed in anonymously.");
+        }).catch((error) => {
+            console.error("Anonymous sign-in failed:", error);
+            setConnectionStatus("Connection failed. Please refresh the page.", true);
+        });
 
         onAuthStateChanged(auth, (user) => {
             const saveItemBtn = document.getElementById('save-item-btn');
@@ -475,7 +472,7 @@
 
         const deleteItem = async (itemId) => {
             if (window.isAuthReady()) {
-                const itemDocRef = doc(window.db, `artifacts/${window.appId}/public/data/items`, itemId);
+                const itemDocRef = doc(window.db, `artifacts/${appId}/public/data/items`, itemId);
                 try {
                     await deleteDoc(itemDocRef);
                     console.log("Document successfully deleted!");
@@ -499,7 +496,7 @@
             const category = itemCategoryInput.value;
             
             if (id) {
-                const itemDocRef = doc(window.db, `artifacts/${window.appId}/public/data/items`, id);
+                const itemDocRef = doc(window.db, `artifacts/${appId}/public/data/items`, id);
                 try {
                     await updateDoc(itemDocRef, { name, description, price, images, category });
                     console.log("Document successfully updated!");
@@ -508,7 +505,7 @@
                 }
             } else {
                 try {
-                    await addDoc(collection(window.db, `artifacts/${window.appId}/public/data/items`), { name, description, price, images, category });
+                    await addDoc(collection(window.db, `artifacts/${appId}/public/data/items`), { name, description, price, images, category });
                     console.log("Document successfully written!");
                 } catch (e) {
                     console.error("Error adding document: ", e);
@@ -538,7 +535,7 @@
 
         // Function to listen for items once auth is ready
         const listenForItems = () => {
-            const itemsCollectionRef = collection(window.db, `artifacts/${window.appId}/public/data/items`);
+            const itemsCollectionRef = collection(window.db, `artifacts/${appId}/public/data/items`);
             onSnapshot(itemsCollectionRef, (querySnapshot) => {
                 const items = [];
                 querySnapshot.forEach((doc) => {
