@@ -120,14 +120,7 @@
         <section id="admin-panel" class="bg-gray-100 p-8 rounded-xl shadow-inner my-10">
             <h2 class="text-3xl font-extrabold text-gray-900 mb-6 text-center">Admin Panel</h2>
             <div id="admin-panel-content">
-                <form id="password-form" class="max-w-md mx-auto space-y-4">
-                    <p class="text-center text-gray-600">Enter the password to access the admin panel:</p>
-                    <input type="password" id="admin-password" placeholder="Enter password" class="w-full p-2 border rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button type="submit" id="password-go-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors duration-300">Go</button>
-                    <p id="password-error" class="text-red-500 text-center hidden">Incorrect password. Please try again.</p>
-                </form>
-                <form id="item-form" class="max-w-xl mx-auto space-y-4 hidden">
-                    <p id="password-success" class="text-green-500 text-center font-bold mb-4 hidden">Password accepted. You can now manage items.</p>
+                <form id="item-form" class="max-w-xl mx-auto space-y-4">
                     <input type="hidden" id="item-id">
                     <div>
                         <label for="item-name" class="block text-sm font-medium text-gray-700">Item Name</label>
@@ -163,7 +156,7 @@
                             <option value="other">Other</option>
                         </select>
                     </div>
-                    <button type="submit" id="save-item-btn" disabled class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300 opacity-50 cursor-not-allowed">
+                    <button type="submit" id="save-item-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
                         Save Item
                     </button>
                     <p id="connection-status" class="mt-2 text-center text-sm text-gray-500"></p>
@@ -214,10 +207,6 @@
             let isAuthReady = false;
 
             // --- DOM Element References ---
-            const passwordForm = document.getElementById('password-form');
-            const adminPasswordInput = document.getElementById('admin-password');
-            const passwordError = document.getElementById('password-error');
-            const passwordSuccess = document.getElementById('password-success');
             const itemForm = document.getElementById('item-form');
             const itemsContainer = document.getElementById('items-container');
             const saveItemBtn = document.getElementById('save-item-btn');
@@ -237,8 +226,6 @@
             const confirmNoBtn = document.getElementById('confirm-no-btn');
             let itemToDeleteId = null;
 
-            // New, simple password
-            const ADMIN_PASSWORD = "test";
             const categories = [
                 "bridles", "saddles", "saddle pads", "bits", "parts and pieces",
                 "saddle racks", "spurs", "halters and lead ropes", "other"
@@ -272,27 +259,6 @@
 
             // --- Event Listeners and Logic ---
             
-            // Password form handler - now with a delay for visual feedback
-            passwordForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                console.log("Password entered:", adminPasswordInput.value);
-                console.log("Correct password is:", ADMIN_PASSWORD);
-                if (adminPasswordInput.value === ADMIN_PASSWORD) {
-                    console.log("Correct password entered. Displaying admin panel.");
-                    passwordError.classList.add('hidden');
-                    passwordSuccess.classList.remove('hidden'); // Show success message
-                    setTimeout(() => {
-                        passwordForm.classList.add('hidden');
-                        itemForm.classList.remove('hidden');
-                    }, 500); // 500ms delay to show success message
-                } else {
-                    console.log("Incorrect password. Please try again.");
-                    passwordError.classList.remove('hidden');
-                    passwordSuccess.classList.add('hidden');
-                    adminPasswordInput.value = '';
-                }
-            });
-
             // Handles the item creation/update form
             itemForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -387,8 +353,6 @@
                     itemPriceInput.value = itemToEdit.price;
                     itemImageInput.value = itemToEdit.images ? itemToEdit.images.join(', ') : '';
                     itemCategoryInput.value = itemToEdit.category || '';
-                    passwordForm.classList.add('hidden');
-                    itemForm.classList.remove('hidden');
                     window.scrollTo({ top: document.getElementById('admin-panel').offsetTop - 20, behavior: 'smooth' });
                 }
             };
@@ -516,22 +480,13 @@
 
             // --- Authentication and Main Flow ---
             setConnectionStatus("Connecting to database...");
-
-            if (initialAuthToken) {
-                signInWithCustomToken(auth, initialAuthToken).then(() => {
-                    console.log("Signed in with custom token.");
-                }).catch((error) => {
-                    console.error("Custom token sign-in failed:", error);
-                    setConnectionStatus("Connection failed. Please check your Firebase config.", true);
-                });
-            } else {
-                signInAnonymously(auth).then(() => {
-                    console.log("Signed in anonymously.");
-                }).catch((error) => {
-                    console.error("Anonymous sign-in failed:", error);
-                    setConnectionStatus("Connection failed. Please check your Firebase config.", true);
-                });
-            }
+            
+            signInAnonymously(auth).then(() => {
+                console.log("Signed in anonymously.");
+            }).catch((error) => {
+                console.error("Anonymous sign-in failed:", error);
+                setConnectionStatus("Connection failed. Please check your Firebase config.", true);
+            });
             
             onAuthStateChanged(auth, (user) => {
                 if (user) {
@@ -540,18 +495,10 @@
                     console.log("User signed in:", userId);
                     setConnectionStatus("Ready to save items!");
                     listenForItems();
-                    if (saveItemBtn) {
-                        saveItemBtn.disabled = false;
-                        saveItemBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    }
                 } else {
                     console.log("User is signed out.");
                     isAuthReady = false;
                     setConnectionStatus("Connecting to database...");
-                    if (saveItemBtn) {
-                        saveItemBtn.disabled = true;
-                        saveItemBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                    }
                 }
             });
         });
