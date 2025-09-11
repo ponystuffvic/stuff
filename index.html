@@ -196,6 +196,7 @@
 
             // --- Configuration and Initialization ---
             const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
             
             const app = initializeApp(firebaseConfig);
@@ -264,6 +265,12 @@
                 e.preventDefault();
                 console.log("Item form submitted.");
 
+                // Disable button and show saving status
+                saveItemBtn.disabled = true;
+                saveItemBtn.textContent = 'Saving...';
+                saveItemBtn.classList.add('bg-blue-400', 'cursor-not-allowed');
+                saveItemBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+
                 const id = itemIdInput.value;
                 const name = itemNameInput.value;
                 const description = itemDescriptionInput.value;
@@ -272,27 +279,33 @@
                 const category = itemCategoryInput.value;
                 
                 if (isAuthReady) {
-                    if (id) {
-                        const itemDocRef = doc(db, `artifacts/${app.options.projectId}/public/data/items`, id);
-                        try {
+                    try {
+                        if (id) {
+                            const itemDocRef = doc(db, `artifacts/${appId}/public/data/items`, id);
                             await updateDoc(itemDocRef, { name, description, price, images, category });
                             console.log("Document successfully updated!");
-                        } catch (e) {
-                            console.error("Error updating document: ", e);
-                        }
-                    } else {
-                        try {
-                            await addDoc(collection(db, `artifacts/${app.options.projectId}/public/data/items`), { name, description, price, images, category });
+                            setConnectionStatus("Item updated successfully!", false);
+                        } else {
+                            await addDoc(collection(db, `artifacts/${appId}/public/data/items`), { name, description, price, images, category });
                             console.log("Document successfully written!");
-                        } catch (e) {
-                            console.error("Error adding document: ", e);
+                            setConnectionStatus("Item added successfully!", false);
                         }
+                    } catch (e) {
+                        console.error("Error saving document: ", e);
+                        setConnectionStatus("Error: " + e.message, true);
                     }
                     itemForm.reset();
                     itemIdInput.value = '';
                 } else {
                     console.error("Database connection not ready. Cannot save item.");
+                    setConnectionStatus("Error: Database not ready. Please refresh the page.", true);
                 }
+                
+                // Re-enable button and reset text
+                saveItemBtn.disabled = false;
+                saveItemBtn.textContent = 'Save Item';
+                saveItemBtn.classList.remove('bg-blue-400', 'cursor-not-allowed');
+                saveItemBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
             });
 
             // Handles item deletion from the confirmation modal
@@ -332,15 +345,18 @@
             // --- Database Functions ---
             const deleteItem = async (itemId) => {
                 if (isAuthReady) {
-                    const itemDocRef = doc(db, `artifacts/${app.options.projectId}/public/data/items`, itemId);
                     try {
+                        const itemDocRef = doc(db, `artifacts/${appId}/public/data/items`, itemId);
                         await deleteDoc(itemDocRef);
                         console.log("Document successfully deleted!");
+                        setConnectionStatus("Item deleted successfully!", false);
                     } catch (e) {
                         console.error("Error removing document: ", e);
+                        setConnectionStatus("Error: " + e.message, true);
                     }
                 } else {
                     console.error("Database connection not ready. Cannot delete item.");
+                    setConnectionStatus("Error: Database not ready.", true);
                 }
             };
 
@@ -461,11 +477,11 @@
             };
 
             const listenForItems = () => {
-                if (!db || !app.options.projectId) {
+                if (!db || !appId) {
                     console.error("Firebase not initialized. Cannot listen for items.");
                     return;
                 }
-                const itemsCollectionRef = collection(db, `artifacts/${app.options.projectId}/public/data/items`);
+                const itemsCollectionRef = collection(db, `artifacts/${appId}/public/data/items`);
                 onSnapshot(itemsCollectionRef, (querySnapshot) => {
                     const items = [];
                     querySnapshot.forEach((doc) => {
