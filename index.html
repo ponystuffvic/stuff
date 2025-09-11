@@ -136,15 +136,10 @@
                     <option value="halters and lead ropes">Halters and Lead Ropes</option>
                     <option value="other">Other</option>
                 </select>
-                <div class="relative">
-                    <button id="admin-panel-btn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
+                <div>
+                    <a href="#admin-panel" id="admin-panel-btn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
                         Manage Items
-                    </button>
-                    <!-- A simple password prompt -->
-                    <div id="password-container" class="absolute right-0 mt-2 p-2 bg-white rounded-lg shadow-xl hidden z-10">
-                        <input type="password" id="admin-password" placeholder="Enter password" class="w-full p-2 border rounded text-gray-900">
-                        <button id="password-go-btn" class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white p-2 rounded">Go</button>
-                    </div>
+                    </a>
                 </div>
             </nav>
         </div>
@@ -179,10 +174,16 @@
             </p>
         </section>
 
-        <!-- Admin Panel (Hidden by default) -->
-        <section id="admin-panel" class="hidden bg-gray-100 p-8 rounded-xl shadow-inner my-10">
+        <!-- Admin Panel -->
+        <section id="admin-panel" class="bg-gray-100 p-8 rounded-xl shadow-inner my-10">
             <h2 class="text-3xl font-extrabold text-gray-900 mb-6 text-center">Admin Panel</h2>
-            <form id="item-form" class="max-w-xl mx-auto space-y-4">
+            <div id="password-form-container" class="max-w-md mx-auto space-y-4">
+                <p class="text-center text-gray-600">Enter the password to access the admin panel:</p>
+                <input type="password" id="admin-password" placeholder="Enter password" class="w-full p-2 border rounded-md text-gray-900">
+                <button id="password-go-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors duration-300">Go</button>
+                <p id="password-error" class="text-red-500 text-center hidden">Incorrect password. Please try again.</p>
+            </div>
+            <form id="item-form" class="max-w-xl mx-auto space-y-4 hidden">
                 <input type="hidden" id="item-id">
                 <div>
                     <label for="item-name" class="block text-sm font-medium text-gray-700">Item Name</label>
@@ -226,10 +227,11 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-900 text-white p-6 mt-10 rounded-t-lg">
-        <div class="container mx-auto text-center text-sm">
-            <p>&copy; 2024 Tack for Sale. All rights reserved.</p>
-        </div>
+    <footer class="bg-gray-900 text-white p-6 mt-10 rounded-t-lg flex justify-between items-center">
+        <p class="text-sm">&copy; 2024 Tack for Sale. All rights reserved.</p>
+        <button id="go-to-top-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
+            Go to Top
+        </button>
     </footer>
 
     <!-- New Confirmation Modal -->
@@ -248,9 +250,10 @@
         // Get all the DOM elements first
         const adminPanelBtn = document.getElementById('admin-panel-btn');
         const adminPanel = document.getElementById('admin-panel');
-        const passwordContainer = document.getElementById('password-container');
+        const passwordFormContainer = document.getElementById('password-form-container');
         const adminPasswordInput = document.getElementById('admin-password');
         const passwordGoBtn = document.getElementById('password-go-btn');
+        const passwordError = document.getElementById('password-error');
         const itemsContainer = document.getElementById('items-container');
         const itemForm = document.getElementById('item-form');
         const itemIdInput = document.getElementById('item-id');
@@ -260,6 +263,7 @@
         const itemImageInput = document.getElementById('item-image');
         const itemCategoryInput = document.getElementById('item-category');
         const sortSelect = document.getElementById('sort-select');
+        const goToTopBtn = document.getElementById('go-to-top-btn');
 
         // New modal elements
         const confirmModal = document.getElementById('confirm-modal');
@@ -270,35 +274,27 @@
         // Set a simple password.
         // WARNING: This is NOT secure. The password is visible in the page source.
         const ADMIN_PASSWORD = "passwordword332211";
-
-        // Function to handle the password check
-        adminPanelBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent the body click from closing it immediately
-            passwordContainer.classList.toggle('hidden');
-            adminPasswordInput.focus();
-        });
-
+        
+        // Handle password submission to reveal the admin panel
         passwordGoBtn.addEventListener('click', () => {
             if (adminPasswordInput.value === ADMIN_PASSWORD) {
-                adminPanel.classList.remove('hidden');
-                passwordContainer.classList.add('hidden');
-                window.scrollTo({
-                    top: adminPanel.offsetTop - 20,
-                    behavior: 'smooth'
-                });
+                passwordFormContainer.classList.add('hidden');
+                itemForm.classList.remove('hidden');
             } else {
                 console.error('Incorrect password. Please try again.');
+                passwordError.classList.remove('hidden');
                 adminPasswordInput.value = '';
             }
         });
-
-        // Close the password container if the user clicks anywhere else
-        document.body.addEventListener('click', (e) => {
-            if (!adminPanelBtn.contains(e.target) && !passwordContainer.contains(e.target)) {
-                passwordContainer.classList.add('hidden');
-            }
-        });
         
+        // Go to top button functionality
+        goToTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
         const categories = [
             "bridles", "saddles", "saddle pads", "bits", "parts and pieces",
             "saddle racks", "spurs", "halters and lead ropes", "other"
@@ -439,7 +435,8 @@
                 itemPriceInput.value = itemToEdit.price;
                 itemImageInput.value = itemToEdit.images ? itemToEdit.images.join(', ') : '';
                 itemCategoryInput.value = itemToEdit.category || '';
-                adminPanel.classList.remove('hidden');
+                passwordFormContainer.classList.add('hidden');
+                itemForm.classList.remove('hidden');
                 window.scrollTo({
                     top: adminPanel.offsetTop - 20,
                     behavior: 'smooth'
@@ -495,6 +492,7 @@
                 }
             }
             itemForm.reset();
+            itemIdInput.value = '';
         });
 
         sortSelect.addEventListener('change', (e) => {
@@ -529,9 +527,6 @@
                 console.error("Error listening to items collection:", error);
             });
         };
-        
-        // This is not needed anymore as the auth listener handles it.
-        // window.initializeAppLogic = initializeAppLogic;
     </script>
 </body>
 </html>
