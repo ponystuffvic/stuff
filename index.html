@@ -99,7 +99,7 @@
                     <option value="other">Other</option>
                 </select>
                 <div>
-                    <a href="#admin-panel" id="admin-panel-btn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
+                    <a href="#" id="admin-panel-btn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
                         Manage Items
                     </a>
                 </div>
@@ -338,7 +338,8 @@
             
             // --- Event Listeners and Logic ---
             
-            adminPanelBtn.addEventListener('click', () => {
+            adminPanelBtn.addEventListener('click', (e) => {
+                e.preventDefault(); // This is the key fix to stop the navigation
                 if (isAdmin) {
                     // Already logged in, show admin panel
                     loginPanel.classList.add('hidden');
