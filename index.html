@@ -270,7 +270,7 @@
             // Re-written password form handler to be more reliable
             passwordForm.addEventListener('submit', (e) => {
                 e.preventDefault();
-                console.log("Password form submitted.");
+                console.log("Password entered:", adminPasswordInput.value); // New debugging line
                 if (adminPasswordInput.value === ADMIN_PASSWORD) {
                     console.log("Correct password entered. Displaying admin panel.");
                     passwordForm.classList.add('hidden');
