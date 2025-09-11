@@ -95,6 +95,7 @@
                 Welcome to our online garage sale, located in Victoria, BC. Browse the items below. For any questions or to purchase an item, please send an email.
             </p>
         </div>
+        <p id="user-info" class="text-center text-sm text-gray-500 mb-4"></p>
 
         <!-- Items Grid -->
         <div id="items-container" class="space-y-12">
@@ -212,6 +213,7 @@
             const itemsContainer = document.getElementById('items-container');
             const saveItemBtn = document.getElementById('save-item-btn');
             const connectionStatusEl = document.getElementById('connection-status');
+            const userInfoEl = document.getElementById('user-info');
             const goToTopBtn = document.getElementById('go-to-top-btn');
             const sortSelect = document.getElementById('sort-select');
 
@@ -258,13 +260,20 @@
                 itemToDeleteId = null;
             };
 
+            const resetSaveButton = () => {
+                saveItemBtn.disabled = false;
+                saveItemBtn.textContent = 'Save Item';
+                saveItemBtn.classList.remove('bg-blue-400', 'cursor-not-allowed');
+                saveItemBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            }
+
             // --- Event Listeners and Logic ---
             
             // Handles the item creation/update form
             itemForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 console.log("Item form submitted.");
-
+                
                 // Disable button and show saving status
                 saveItemBtn.disabled = true;
                 saveItemBtn.textContent = 'Saving...';
@@ -290,22 +299,18 @@
                             console.log("Document successfully written!");
                             setConnectionStatus("Item added successfully!", false);
                         }
+                        itemForm.reset();
+                        itemIdInput.value = '';
                     } catch (e) {
                         console.error("Error saving document: ", e);
                         setConnectionStatus("Error: " + e.message, true);
                     }
-                    itemForm.reset();
-                    itemIdInput.value = '';
                 } else {
                     console.error("Database connection not ready. Cannot save item.");
                     setConnectionStatus("Error: Database not ready. Please refresh the page.", true);
                 }
                 
-                // Re-enable button and reset text
-                saveItemBtn.disabled = false;
-                saveItemBtn.textContent = 'Save Item';
-                saveItemBtn.classList.remove('bg-blue-400', 'cursor-not-allowed');
-                saveItemBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                resetSaveButton();
             });
 
             // Handles item deletion from the confirmation modal
@@ -508,6 +513,7 @@
                 if (user) {
                     userId = user.uid;
                     isAuthReady = true;
+                    userInfoEl.textContent = `User ID: ${userId}`;
                     console.log("User signed in:", userId);
                     setConnectionStatus("Ready to save items!");
                     listenForItems();
