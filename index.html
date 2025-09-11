@@ -196,98 +196,37 @@
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         document.addEventListener('DOMContentLoaded', () => {
-            console.log("DOM is fully loaded.");
+            console.log("DOM is fully loaded. Initializing app...");
 
-            // IMPORTANT: The following variables are provided by the environment. Do not change them.
+            // --- Configuration and Initialization ---
             const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
             const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
             
             const app = initializeApp(firebaseConfig);
             const db = getFirestore(app);
             const auth = getAuth(app);
+            setLogLevel('debug');
             
             let userId = null;
             let isAuthReady = false;
 
-            setLogLevel('debug');
-
-            const setConnectionStatus = (message, isError = false) => {
-                const statusMessageEl = document.getElementById('connection-status');
-                if (statusMessageEl) {
-                    statusMessageEl.textContent = message;
-                    if (isError) {
-                        statusMessageEl.classList.remove('text-gray-500');
-                        statusMessageEl.classList.add('text-red-500');
-                    } else {
-                        statusMessageEl.classList.remove('text-red-500');
-                        statusMessageEl.classList.add('text-gray-500');
-                    }
-                }
-            };
-
-            setConnectionStatus("Connecting to database...");
-
-            // Authenticate the user
-            if (initialAuthToken) {
-                signInWithCustomToken(auth, initialAuthToken).then(() => {
-                    console.log("Signed in with custom token.");
-                }).catch((error) => {
-                    console.error("Custom token sign-in failed:", error);
-                    setConnectionStatus("Connection failed. Please check your Firebase config.", true);
-                });
-            } else {
-                signInAnonymously(auth).then(() => {
-                    console.log("Signed in anonymously.");
-                }).catch((error) => {
-                    console.error("Anonymous sign-in failed:", error);
-                    setConnectionStatus("Connection failed. Please check your Firebase config.", true);
-                });
-            }
-            
-            onAuthStateChanged(auth, (user) => {
-                const saveItemBtn = document.getElementById('save-item-btn');
-                if (user) {
-                    userId = user.uid;
-                    isAuthReady = true;
-                    console.log("User signed in:", userId); // Your unique user ID will be printed here.
-                    setConnectionStatus("Ready to save items!");
-                    listenForItems();
-                    if (saveItemBtn) {
-                        saveItemBtn.disabled = false;
-                        saveItemBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    }
-                } else {
-                    console.log("User is signed out.");
-                    isAuthReady = false;
-                    setConnectionStatus("Connecting to database...");
-                    if (saveItemBtn) {
-                        saveItemBtn.disabled = true;
-                        saveItemBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                    }
-                }
-            });
-
-            window.app = app;
-            window.db = db;
-            window.auth = auth;
-            window.getUserId = () => userId;
-            window.isAuthReady = () => isAuthReady;
-            
-            const adminPanelBtn = document.getElementById('admin-panel-btn');
-            const adminPanel = document.getElementById('admin-panel');
+            // --- DOM Element References ---
             const passwordForm = document.getElementById('password-form');
             const adminPasswordInput = document.getElementById('admin-password');
             const passwordError = document.getElementById('password-error');
-            const itemsContainer = document.getElementById('items-container');
             const itemForm = document.getElementById('item-form');
+            const itemsContainer = document.getElementById('items-container');
+            const saveItemBtn = document.getElementById('save-item-btn');
+            const connectionStatusEl = document.getElementById('connection-status');
+            const goToTopBtn = document.getElementById('go-to-top-btn');
+            const sortSelect = document.getElementById('sort-select');
+
             const itemIdInput = document.getElementById('item-id');
             const itemNameInput = document.getElementById('item-name');
             const itemDescriptionInput = document.getElementById('item-description');
             const itemPriceInput = document.getElementById('item-price');
             const itemImageInput = document.getElementById('item-image');
             const itemCategoryInput = document.getElementById('item-category');
-            const sortSelect = document.getElementById('sort-select');
-            const goToTopBtn = document.getElementById('go-to-top-btn');
 
             const confirmModal = document.getElementById('confirm-modal');
             const confirmYesBtn = document.getElementById('confirm-yes-btn');
@@ -295,7 +234,40 @@
             let itemToDeleteId = null;
 
             const ADMIN_PASSWORD = "passwordword332211";
+            const categories = [
+                "bridles", "saddles", "saddle pads", "bits", "parts and pieces",
+                "saddle racks", "spurs", "halters and lead ropes", "other"
+            ];
             
+            window.currentItems = [];
+
+            // --- Utility Functions ---
+            const setConnectionStatus = (message, isError = false) => {
+                if (connectionStatusEl) {
+                    connectionStatusEl.textContent = message;
+                    if (isError) {
+                        connectionStatusEl.classList.remove('text-gray-500');
+                        connectionStatusEl.classList.add('text-red-500');
+                    } else {
+                        connectionStatusEl.classList.remove('text-red-500');
+                        connectionStatusEl.classList.add('text-gray-500');
+                    }
+                }
+            };
+
+            const showConfirmModal = (itemId) => {
+                itemToDeleteId = itemId;
+                confirmModal.classList.remove('hidden');
+            };
+
+            const hideConfirmModal = () => {
+                confirmModal.classList.add('hidden');
+                itemToDeleteId = null;
+            };
+
+            // --- Event Listeners and Logic ---
+            
+            // Re-written password form handler to be more reliable
             passwordForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 console.log("Password form submitted.");
@@ -309,19 +281,103 @@
                     adminPasswordInput.value = '';
                 }
             });
-            
-            goToTopBtn.addEventListener('click', () => {
-                window.scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
-                });
+
+            // Handles the item creation/update form
+            itemForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                console.log("Item form submitted.");
+
+                const id = itemIdInput.value;
+                const name = itemNameInput.value;
+                const description = itemDescriptionInput.value;
+                const price = parseFloat(itemPriceInput.value);
+                const images = itemImageInput.value.split(',').map(url => url.trim()).filter(url => url.length > 0);
+                const category = itemCategoryInput.value;
+                
+                if (isAuthReady) {
+                    if (id) {
+                        const itemDocRef = doc(db, `artifacts/${app.options.projectId}/public/data/items`, id);
+                        try {
+                            await updateDoc(itemDocRef, { name, description, price, images, category });
+                            console.log("Document successfully updated!");
+                        } catch (e) {
+                            console.error("Error updating document: ", e);
+                        }
+                    } else {
+                        try {
+                            await addDoc(collection(db, `artifacts/${app.options.projectId}/public/data/items`), { name, description, price, images, category });
+                            console.log("Document successfully written!");
+                        } catch (e) {
+                            console.error("Error adding document: ", e);
+                        }
+                    }
+                    itemForm.reset();
+                    itemIdInput.value = '';
+                } else {
+                    console.error("Database connection not ready. Cannot save item.");
+                }
             });
 
-            const categories = [
-                "bridles", "saddles", "saddle pads", "bits", "parts and pieces",
-                "saddle racks", "spurs", "halters and lead ropes", "other"
-            ];
+            // Handles item deletion from the confirmation modal
+            confirmYesBtn.addEventListener('click', () => {
+                if (itemToDeleteId) {
+                    deleteItem(itemToDeleteId);
+                    hideConfirmModal();
+                }
+            });
+
+            confirmNoBtn.addEventListener('click', () => {
+                hideConfirmModal();
+            });
             
+            // Handles 'Go to Top' button
+            goToTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            // Handles category sorting
+            sortSelect.addEventListener('change', (e) => {
+                const targetId = e.target.value;
+                if (targetId === 'all') {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement) {
+                        window.scrollTo({ top: targetElement.offsetTop - 100, behavior: 'smooth' });
+                    }
+                }
+            });
+
+            // --- Database Functions ---
+            const deleteItem = async (itemId) => {
+                if (isAuthReady) {
+                    const itemDocRef = doc(db, `artifacts/${app.options.projectId}/public/data/items`, itemId);
+                    try {
+                        await deleteDoc(itemDocRef);
+                        console.log("Document successfully deleted!");
+                    } catch (e) {
+                        console.error("Error removing document: ", e);
+                    }
+                } else {
+                    console.error("Database connection not ready. Cannot delete item.");
+                }
+            };
+
+            const editItem = (itemId) => {
+                const itemToEdit = window.currentItems.find(item => item.id === itemId);
+                if (itemToEdit) {
+                    itemIdInput.value = itemToEdit.id;
+                    itemNameInput.value = itemToEdit.name;
+                    itemDescriptionInput.value = itemToEdit.description;
+                    itemPriceInput.value = itemToEdit.price;
+                    itemImageInput.value = itemToEdit.images ? itemToEdit.images.join(', ') : '';
+                    itemCategoryInput.value = itemToEdit.category || '';
+                    passwordForm.classList.add('hidden');
+                    itemForm.classList.remove('hidden');
+                    window.scrollTo({ top: document.getElementById('admin-panel').offsetTop - 20, behavior: 'smooth' });
+                }
+            };
+
             const renderItems = (items) => {
                 itemsContainer.innerHTML = '';
                 const groupedItems = items.reduce((acc, item) => {
@@ -350,24 +406,27 @@
                     if (itemsInCategory.length === 0) {
                         gridContainer.innerHTML = `<p class="text-gray-500">No items listed in this category yet.</p>`;
                     } else {
-                        itemsInCategory.forEach((item, index) => {
+                        itemsInCategory.forEach(item => {
                             const itemDiv = document.createElement('div');
                             itemDiv.className = 'bg-white rounded-xl shadow-lg overflow-hidden transition-transform transform hover:scale-105 relative';
                             
                             const imageGallery = document.createElement('div');
                             imageGallery.className = 'flex overflow-x-auto snap-x snap-mandatory hide-scrollbar';
                             const imageUrls = Array.isArray(item.images) ? item.images : [];
+                            const defaultImage = 'https://placehold.co/600x400/818181/FFFFFF?text=No+Photo';
+
                             if (imageUrls.length > 0) {
                                 imageUrls.forEach(imageSrc => {
                                     const img = document.createElement('img');
                                     img.src = imageSrc;
                                     img.alt = `Image of ${item.name}`;
                                     img.className = 'w-full h-48 object-cover flex-shrink-0 snap-center';
+                                    img.onerror = () => { img.src = defaultImage; };
                                     imageGallery.appendChild(img);
                                 });
                             } else {
                                 const img = document.createElement('img');
-                                img.src = 'https://placehold.co/600x400/818181/FFFFFF?text=No+Photo';
+                                img.src = defaultImage;
                                 img.alt = 'No photo available';
                                 img.className = 'w-full h-48 object-cover';
                                 imageGallery.appendChild(img);
@@ -414,132 +473,20 @@
                 });
                 
                 document.querySelectorAll('.delete-btn').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        const itemId = e.currentTarget.getAttribute('data-id');
-                        showConfirmModal(itemId);
-                    });
+                    button.addEventListener('click', (e) => showConfirmModal(e.currentTarget.getAttribute('data-id')));
                 });
 
                 document.querySelectorAll('.edit-btn').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        const itemId = e.currentTarget.getAttribute('data-id');
-                        editItem(itemId);
-                    });
+                    button.addEventListener('click', (e) => editItem(e.currentTarget.getAttribute('data-id')));
                 });
             };
 
-            const showConfirmModal = (itemId) => {
-                itemToDeleteId = itemId;
-                confirmModal.classList.remove('hidden');
-            };
-
-            const hideConfirmModal = () => {
-                confirmModal.classList.add('hidden');
-                itemToDeleteId = null;
-            };
-
-            confirmYesBtn.addEventListener('click', () => {
-                if (itemToDeleteId) {
-                    deleteItem(itemToDeleteId);
-                    hideConfirmModal();
-                }
-            });
-
-            confirmNoBtn.addEventListener('click', () => {
-                hideConfirmModal();
-            });
-            
-            const deleteItem = async (itemId) => {
-                if (window.isAuthReady && window.db) {
-                    const itemDocRef = doc(window.db, `artifacts/${window.app.options.projectId}/public/data/items`, itemId);
-                    try {
-                        await deleteDoc(itemDocRef);
-                        console.log("Document successfully deleted!");
-                    } catch (e) {
-                        console.error("Error removing document: ", e);
-                    }
-                } else {
-                    console.error("Database connection not ready. Cannot delete item.");
-                }
-            };
-
-            const editItem = (itemId) => {
-                const itemToEdit = window.currentItems.find(item => item.id === itemId);
-                if (itemToEdit) {
-                    itemIdInput.value = itemToEdit.id;
-                    itemNameInput.value = itemToEdit.name;
-                    itemDescriptionInput.value = itemToEdit.description;
-                    itemPriceInput.value = itemToEdit.price;
-                    itemImageInput.value = itemToEdit.images ? itemToEdit.images.join(', ') : '';
-                    itemCategoryInput.value = itemToEdit.category || '';
-                    passwordForm.classList.add('hidden');
-                    itemForm.classList.remove('hidden');
-                    window.scrollTo({
-                        top: adminPanel.offsetTop - 20,
-                        behavior: 'smooth'
-                    });
-                }
-            };
-
-            itemForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                console.log("Form submitted.");
-
-                const id = itemIdInput.value;
-                const name = itemNameInput.value;
-                const description = itemDescriptionInput.value;
-                const price = parseFloat(itemPriceInput.value);
-                const images = itemImageInput.value.split(',').map(url => url.trim()).filter(url => url.length > 0);
-                const category = itemCategoryInput.value;
-                
-                if (window.isAuthReady && window.db) {
-                    if (id) {
-                        const itemDocRef = doc(window.db, `artifacts/${window.app.options.projectId}/public/data/items`, id);
-                        try {
-                            await updateDoc(itemDocRef, { name, description, price, images, category });
-                            console.log("Document successfully updated!");
-                        } catch (e) {
-                            console.error("Error updating document: ", e);
-                        }
-                    } else {
-                        try {
-                            await addDoc(collection(window.db, `artifacts/${window.app.options.projectId}/public/data/items`), { name, description, price, images, category });
-                            console.log("Document successfully written!");
-                        } catch (e) {
-                            console.error("Error adding document: ", e);
-                        }
-                    }
-                    itemForm.reset();
-                    itemIdInput.value = '';
-                } else {
-                    console.error("Database connection not ready. Cannot save item.");
-                }
-            });
-
-            sortSelect.addEventListener('change', (e) => {
-                const targetId = e.target.value;
-                if (targetId === 'all') {
-                    window.scrollTo({
-                        top: 0,
-                        behavior: 'smooth'
-                    });
-                } else {
-                    const targetElement = document.getElementById(targetId);
-                    if (targetElement) {
-                        window.scrollTo({
-                            top: targetElement.offsetTop - 100,
-                            behavior: 'smooth'
-                        });
-                    }
-                }
-            });
-
             const listenForItems = () => {
-                if (!window.db || !window.app.options.projectId) {
+                if (!db || !app.options.projectId) {
                     console.error("Firebase not initialized. Cannot listen for items.");
                     return;
                 }
-                const itemsCollectionRef = collection(window.db, `artifacts/${window.app.options.projectId}/public/data/items`);
+                const itemsCollectionRef = collection(db, `artifacts/${app.options.projectId}/public/data/items`);
                 onSnapshot(itemsCollectionRef, (querySnapshot) => {
                     const items = [];
                     querySnapshot.forEach((doc) => {
@@ -551,6 +498,47 @@
                     console.error("Error listening to items collection:", error);
                 });
             };
+
+            // --- Authentication and Main Flow ---
+            setConnectionStatus("Connecting to database...");
+
+            if (initialAuthToken) {
+                signInWithCustomToken(auth, initialAuthToken).then(() => {
+                    console.log("Signed in with custom token.");
+                }).catch((error) => {
+                    console.error("Custom token sign-in failed:", error);
+                    setConnectionStatus("Connection failed. Please check your Firebase config.", true);
+                });
+            } else {
+                signInAnonymously(auth).then(() => {
+                    console.log("Signed in anonymously.");
+                }).catch((error) => {
+                    console.error("Anonymous sign-in failed:", error);
+                    setConnectionStatus("Connection failed. Please check your Firebase config.", true);
+                });
+            }
+            
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    userId = user.uid;
+                    isAuthReady = true;
+                    console.log("User signed in:", userId);
+                    setConnectionStatus("Ready to save items!");
+                    listenForItems();
+                    if (saveItemBtn) {
+                        saveItemBtn.disabled = false;
+                        saveItemBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                } else {
+                    console.log("User is signed out.");
+                    isAuthReady = false;
+                    setConnectionStatus("Connecting to database...");
+                    if (saveItemBtn) {
+                        saveItemBtn.disabled = true;
+                        saveItemBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    }
+                }
+            });
         });
     </script>
 </body>
