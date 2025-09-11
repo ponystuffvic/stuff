@@ -6,89 +6,6 @@
     <title>Tack for Sale</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase Libraries -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, query, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // IMPORTANT: The following is a placeholder for your Firebase configuration.
-        // TODO: PASTE YOUR FIREBASE CONFIG HERE
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-        const appId = firebaseConfig.projectId;
-
-        // Set log level for debugging
-        setLogLevel('debug');
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        let userId = null;
-        let isAuthReady = false;
-
-        const setConnectionStatus = (message, isError = false) => {
-            const statusMessageEl = document.getElementById('connection-status');
-            if (statusMessageEl) {
-                statusMessageEl.textContent = message;
-                if (isError) {
-                    statusMessageEl.classList.remove('text-gray-500');
-                    statusMessageEl.classList.add('text-red-500');
-                } else {
-                    statusMessageEl.classList.remove('text-red-500');
-                    statusMessageEl.classList.add('text-gray-500');
-                }
-            }
-        };
-
-        // Handle authentication with anonymous sign-in
-        setConnectionStatus("Connecting to database...");
-        signInAnonymously(auth).then(() => {
-            console.log("Signed in anonymously.");
-        }).catch((error) => {
-            console.error("Anonymous sign-in failed:", error);
-            setConnectionStatus("Connection failed. Please refresh the page.", true);
-        });
-
-        onAuthStateChanged(auth, (user) => {
-            const saveItemBtn = document.getElementById('save-item-btn');
-            if (user) {
-                userId = user.uid;
-                isAuthReady = true;
-                console.log("User signed in:", userId);
-                setConnectionStatus("Ready to save items!");
-                // Start listening for items once authenticated
-                listenForItems();
-                if (saveItemBtn) {
-                    saveItemBtn.disabled = false;
-                    saveItemBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                }
-            } else {
-                console.log("User is signed out.");
-                isAuthReady = false;
-                setConnectionStatus("Connecting to database...");
-                if (saveItemBtn) {
-                    saveItemBtn.disabled = true;
-                    saveItemBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                }
-            }
-        });
-
-        // Global functions and variables available in the script
-        window.app = app;
-        window.db = db;
-        window.auth = auth;
-        window.getUserId = () => userId;
-        window.isAuthReady = () => isAuthReady;
-    </script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -116,7 +33,7 @@
             -ms-overflow-style: none; /* for IE and Edge */
             scrollbar-width: none; /* for Firefox */
         }
-        /* New confirmation modal styles */
+        /* Confirmation modal styles */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -272,8 +189,82 @@
         </div>
     </div>
 
+    <!-- Firebase and JavaScript -->
     <script type="module">
-        // Get all the DOM elements first
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // IMPORTANT: PASTE YOUR FIREBASE CONFIG HERE
+        // Get this code block from your Firebase project's "Project settings" -> "Your apps" section.
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        let userId = null;
+        let isAuthReady = false;
+
+        setLogLevel('debug');
+
+        const setConnectionStatus = (message, isError = false) => {
+            const statusMessageEl = document.getElementById('connection-status');
+            if (statusMessageEl) {
+                statusMessageEl.textContent = message;
+                if (isError) {
+                    statusMessageEl.classList.remove('text-gray-500');
+                    statusMessageEl.classList.add('text-red-500');
+                } else {
+                    statusMessageEl.classList.remove('text-red-500');
+                    statusMessageEl.classList.add('text-gray-500');
+                }
+            }
+        };
+
+        setConnectionStatus("Connecting to database...");
+        signInAnonymously(auth).then(() => {
+            console.log("Signed in anonymously.");
+        }).catch((error) => {
+            console.error("Anonymous sign-in failed:", error);
+            setConnectionStatus("Connection failed. Please check your Firebase config.", true);
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            const saveItemBtn = document.getElementById('save-item-btn');
+            if (user) {
+                userId = user.uid;
+                isAuthReady = true;
+                console.log("User signed in:", userId); // Your unique user ID will be printed here.
+                setConnectionStatus("Ready to save items!");
+                listenForItems();
+                if (saveItemBtn) {
+                    saveItemBtn.disabled = false;
+                    saveItemBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            } else {
+                console.log("User is signed out.");
+                isAuthReady = false;
+                setConnectionStatus("Connecting to database...");
+                if (saveItemBtn) {
+                    saveItemBtn.disabled = true;
+                    saveItemBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        });
+
+        window.app = app;
+        window.db = db;
+        window.auth = auth;
+        window.getUserId = () => userId;
+        window.isAuthReady = () => isAuthReady;
+        
         const adminPanelBtn = document.getElementById('admin-panel-btn');
         const adminPanel = document.getElementById('admin-panel');
         const passwordFormContainer = document.getElementById('password-form-container');
@@ -291,17 +282,13 @@
         const sortSelect = document.getElementById('sort-select');
         const goToTopBtn = document.getElementById('go-to-top-btn');
 
-        // New modal elements
         const confirmModal = document.getElementById('confirm-modal');
         const confirmYesBtn = document.getElementById('confirm-yes-btn');
         const confirmNoBtn = document.getElementById('confirm-no-btn');
         let itemToDeleteId = null;
 
-        // Set a simple password.
-        // WARNING: This is NOT secure. The password is visible in the page source.
         const ADMIN_PASSWORD = "passwordword332211";
         
-        // Handle password submission to reveal the admin panel
         passwordGoBtn.addEventListener('click', () => {
             if (adminPasswordInput.value === ADMIN_PASSWORD) {
                 passwordFormContainer.classList.add('hidden');
@@ -313,7 +300,6 @@
             }
         });
         
-        // Go to top button functionality
         goToTopBtn.addEventListener('click', () => {
             window.scrollTo({
                 top: 0,
@@ -360,8 +346,9 @@
                         
                         const imageGallery = document.createElement('div');
                         imageGallery.className = 'flex overflow-x-auto snap-x snap-mandatory hide-scrollbar';
-                        if (item.images && item.images.length > 0) {
-                            item.images.forEach(imageSrc => {
+                        const imageUrls = Array.isArray(item.images) ? item.images : [];
+                        if (imageUrls.length > 0) {
+                            imageUrls.forEach(imageSrc => {
                                 const img = document.createElement('img');
                                 img.src = imageSrc;
                                 img.alt = `Image of ${item.name}`;
@@ -381,7 +368,7 @@
                         const contentDiv = document.createElement('div');
                         contentDiv.className = 'p-6';
                         contentDiv.innerHTML = `
-                            <h3 class="text-xl font-bold mb-2">${index + 1}. ${item.name}</h3>
+                            <h3 class="text-xl font-bold mb-2">${item.name}</h3>
                             <p class="text-gray-600 mb-4">${item.description}</p>
                             <div class="flex items-center justify-between">
                                 <span class="text-2xl font-bold text-blue-600">$${item.price}</span>
@@ -452,6 +439,20 @@
             hideConfirmModal();
         });
         
+        const deleteItem = async (itemId) => {
+            if (window.isAuthReady && window.db) {
+                const itemDocRef = doc(window.db, `artifacts/${window.app.options.projectId}/public/data/items`, itemId);
+                try {
+                    await deleteDoc(itemDocRef);
+                    console.log("Document successfully deleted!");
+                } catch (e) {
+                    console.error("Error removing document: ", e);
+                }
+            } else {
+                console.error("Database connection not ready. Cannot delete item.");
+            }
+        };
+
         const editItem = (itemId) => {
             const itemToEdit = window.currentItems.find(item => item.id === itemId);
             if (itemToEdit) {
@@ -470,20 +471,6 @@
             }
         };
 
-        const deleteItem = async (itemId) => {
-            if (window.isAuthReady()) {
-                const itemDocRef = doc(window.db, `artifacts/${appId}/public/data/items`, itemId);
-                try {
-                    await deleteDoc(itemDocRef);
-                    console.log("Document successfully deleted!");
-                } catch (e) {
-                    console.error("Error removing document: ", e);
-                }
-            } else {
-                console.error("Authentication not ready. Cannot delete item.");
-            }
-        };
-
         itemForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             console.log("Form submitted.");
@@ -491,28 +478,32 @@
             const id = itemIdInput.value;
             const name = itemNameInput.value;
             const description = itemDescriptionInput.value;
-            const price = itemPriceInput.value;
+            const price = parseFloat(itemPriceInput.value);
             const images = itemImageInput.value.split(',').map(url => url.trim()).filter(url => url.length > 0);
             const category = itemCategoryInput.value;
             
-            if (id) {
-                const itemDocRef = doc(window.db, `artifacts/${appId}/public/data/items`, id);
-                try {
-                    await updateDoc(itemDocRef, { name, description, price, images, category });
-                    console.log("Document successfully updated!");
-                } catch (e) {
-                    console.error("Error updating document: ", e);
+            if (window.isAuthReady && window.db) {
+                if (id) {
+                    const itemDocRef = doc(window.db, `artifacts/${window.app.options.projectId}/public/data/items`, id);
+                    try {
+                        await updateDoc(itemDocRef, { name, description, price, images, category });
+                        console.log("Document successfully updated!");
+                    } catch (e) {
+                        console.error("Error updating document: ", e);
+                    }
+                } else {
+                    try {
+                        await addDoc(collection(window.db, `artifacts/${window.app.options.projectId}/public/data/items`), { name, description, price, images, category });
+                        console.log("Document successfully written!");
+                    } catch (e) {
+                        console.error("Error adding document: ", e);
+                    }
                 }
+                itemForm.reset();
+                itemIdInput.value = '';
             } else {
-                try {
-                    await addDoc(collection(window.db, `artifacts/${appId}/public/data/items`), { name, description, price, images, category });
-                    console.log("Document successfully written!");
-                } catch (e) {
-                    console.error("Error adding document: ", e);
-                }
+                console.error("Database connection not ready. Cannot save item.");
             }
-            itemForm.reset();
-            itemIdInput.value = '';
         });
 
         sortSelect.addEventListener('change', (e) => {
@@ -533,9 +524,12 @@
             }
         });
 
-        // Function to listen for items once auth is ready
         const listenForItems = () => {
-            const itemsCollectionRef = collection(window.db, `artifacts/${appId}/public/data/items`);
+            if (!window.db || !window.app.options.projectId) {
+                console.error("Firebase not initialized. Cannot listen for items.");
+                return;
+            }
+            const itemsCollectionRef = collection(window.db, `artifacts/${window.app.options.projectId}/public/data/items`);
             onSnapshot(itemsCollectionRef, (querySnapshot) => {
                 const items = [];
                 querySnapshot.forEach((doc) => {
