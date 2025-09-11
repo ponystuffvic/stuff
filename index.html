@@ -45,15 +45,24 @@
         }
 
         onAuthStateChanged(auth, (user) => {
+            const saveItemBtn = document.getElementById('save-item-btn');
             if (user) {
                 userId = user.uid;
                 isAuthReady = true;
                 console.log("User signed in:", userId);
                 // Start listening for items once authenticated
                 listenForItems();
+                if (saveItemBtn) {
+                    saveItemBtn.disabled = false;
+                    saveItemBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
             } else {
                 console.log("User is signed out.");
                 isAuthReady = false;
+                if (saveItemBtn) {
+                    saveItemBtn.disabled = true;
+                    saveItemBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
             }
         });
 
@@ -219,7 +228,7 @@
                         <option value="other">Other</option>
                     </select>
                 </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
+                <button type="submit" id="save-item-btn" disabled class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300 opacity-50 cursor-not-allowed">
                     Save Item
                 </button>
             </form>
@@ -461,12 +470,6 @@
         itemForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             console.log("Form submitted.");
-
-            if (!window.isAuthReady()) {
-                console.error("Authentication not ready. Cannot save item.");
-                // Provide user feedback. A temporary message box would be a good idea here.
-                return;
-            }
 
             const id = itemIdInput.value;
             const name = itemNameInput.value;
